@@ -25,6 +25,11 @@ def set_plot_save_svg(enabled: bool) -> None:
     _SAVE_SVG = bool(enabled)
 
 
+def get_plot_save_svg() -> bool:
+    """Return whether SVG outputs are enabled for plot saving."""
+    return bool(_SAVE_SVG)
+
+
 def _save_plot_pair(
     path: str,
     fig=None,

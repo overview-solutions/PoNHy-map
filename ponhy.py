@@ -358,7 +358,6 @@ UNIVARIATE_ANALYSIS_CONFIG = {
     "sampling": "sobol",                     # Sampling: 'lhs' (Latin Hypercube) or 'sobol' (quasi-random) for lower variance with the same n_iter
     "sampling_seed": DEFAULT_SAMPLING_SEED,  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
     "show_progress": True,                   # show per-parameter progress bar
-    "quiet": True,                            # suppress univariate console summary (keep progress bars)
     "make_plot": True,                       # Save parameter-vs-H2 curve plots for the sweep (PNG/SVG)
     "worker_count": N_CORES,                 # Use >1 to parallelize the inner MC per factor value; default to all available cores
 }
@@ -1683,6 +1682,7 @@ if RUN_H2_QUANTIFICATION:
             results_dir=results_path
         )
     else:
+        print("")
         print("Skipped MC convergence sweep (RUN_MC_CONVERGENCE_SWEEP=False).")
 
 
@@ -1696,6 +1696,7 @@ if RUN_H2_QUANTIFICATION:
             seed=SEED,
         )
     else:
+        print("")
         print("Skipped dt_day convergence sweep (RUN_DT_CONVERGENCE_SWEEP=False).")
 
 

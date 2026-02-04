@@ -12,7 +12,7 @@
 # - For N_CORES, use 0 or "auto" to auto-detect CPU count.
 
 # ================================ Run flags ================================
-RUN_INVERSION = false  # Set True to run the inversion routine.
+RUN_INVERSION = true  # Set True to run the inversion routine.
 RUN_H2_QUANTIFICATION = true  # Set True to run the H2 quantification routine.
 
 # ================================ Paths (IQ) ================================
@@ -43,9 +43,9 @@ SAVE_SVG = false  # Save SVG copies of plots alongside PNG outputs [IQ]
 
 # ================================ Mesh parameters (IQ) ================================
 # Mesh parameters.
-DX = 5000  # Units of m [IQ]
-DY = 5000  # Units of m [IQ]
-DZ = 1000  # Units of m [IQ]
+DX = 750  # Units of m [IQ]
+DY = 750  # Units of m [IQ]
+DZ = 500  # Units of m [IQ]
 DEPTH_CORE = 20000  # Units of m [IQ]
 
 # There are two expanding methods one can use: rectangular or square.
@@ -92,12 +92,12 @@ UPPER_SUSCEPTIBILITY = 0.1  # Units of SI [I]
 
 # ================================ Inversion parameters (I) ================================
 # Define the parameters for the inversion
-MAX_ITER = 5  # Max non-linear (outer) iterations [I]
+MAX_ITER = 25  # Max non-linear (outer) iterations [I]
 MAX_ITER_LS = 20  # Max line-search iterations per outer iteration [I]
 MAX_ITER_CG = 100  # Max conjugate-gradient iterations per outer iteration [I]
 TOL_CG = 1e-4  # CG tolerance (stopping criterion) [I]
-SAVE_PRED_RESIDUAL_NPY = false  # Save predicted/residual arrays as .npy files [I]
 
+SAVE_PRED_RESIDUAL_NPY = false  # Save predicted/residual arrays as .npy files [I]
 
 # Regularization: alpha_x/y/z/(xx/yy/zz) -> smoothness; alpha_pgi -> PGI (petrophysical clustering).
 ALPHA_PGI = 1.0  # [I]
@@ -242,7 +242,7 @@ worker_count = 0  # Use >1 to parallelize the inner MC per factor value; default
 
 # ================================ Convergence sweeps (Q) ================================
 # Convergence sweep for saturation analysis (How many iterations are needed for convergence?).
-RUN_MC_CONVERGENCE_SWEEP = true
+RUN_MC_CONVERGENCE_SWEEP = false
 
 [MC_CONVERGENCE_SWEEP_CONFIG]
 iter_values = [10, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]  # Monte Carlo iterations to evaluate

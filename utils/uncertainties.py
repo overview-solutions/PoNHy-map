@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import math
 import os
 import sys
@@ -19,7 +20,7 @@ from utils.no_saturation import (
     _run_no_saturation_sample,
     compute_h2_production_no_saturation,
 )
-from utils.plotting import _save_plot_pair
+from utils.plotting import _save_plot_pair, get_plot_save_svg
 from utils.reporting import save_mc_convergence_sweep_report
 from utils.saturation import run_saturation_monte_carlo
 
@@ -523,7 +524,7 @@ def run_no_saturation_univariate_sweep(
     baseline_n_iter = max(1, int(uni_config.get("baseline_n_iter", n_rep)))
     seed_value = seed if seed is not None else uni_config.get("sampling_seed", base_config.get("sampling_seed"))
     quiet = bool(uni_config.get("quiet", False))
-    show_progress = bool(uni_config.get("show_progress", False) and not quiet)
+    show_progress = bool(uni_config.get("show_progress", True) and not quiet)
     requested_workers = n_cores if n_cores is not None else uni_config.get("worker_count", None)
     worker_count = _clamp_worker_count(requested_workers)
     metric = "no_saturation_total_tons"
@@ -584,14 +585,23 @@ def run_no_saturation_univariate_sweep(
 
     worker_context = {"mc_kwargs": mc_kwargs, "sampling_seed": seed_value}
 
+    total_tasks = len(baseline_tasks) + sum(len(tasks) for tasks in param_task_map.values())
+    overall_progress = None
+    if show_progress and total_tasks > 0:
+        print("\n\n", end="")
+        overall_progress = _get_progress_bar(
+            total=total_tasks,
+            desc="Univariate sweep (no saturation)",
+            file=sys.stdout,
+            leave=False,
+            bar_format=" {l_bar}{bar}|",
+        )
+        overall_progress.refresh()
+
     def _execute_tasks(task_list, desc):
         if not task_list:
             return []
-        progress = (
-            _get_progress_bar(total=len(task_list), desc=desc, file=sys.stdout, leave=False)
-            if show_progress
-            else None
-        )
+        progress = overall_progress if show_progress else None
         results_local = []
 
         def _update():
@@ -637,7 +647,7 @@ def run_no_saturation_univariate_sweep(
                         pass
 
         if progress is not None:
-            progress.close()
+            progress.refresh()
         return results_local
 
     def _display_param_name(name: str) -> str:
@@ -657,6 +667,9 @@ def run_no_saturation_univariate_sweep(
         pname = _display_param_name(param)
         desc = f"Univar {pname}"
         task_results.extend(_execute_tasks(param_task_bucket, desc))
+
+    if overall_progress is not None:
+        overall_progress.close()
 
     param_results: Dict[str, Dict[float, List[float]]] = {}
 
@@ -771,6 +784,14 @@ def run_no_saturation_univariate_sweep(
 
     results.sort(key=lambda x: x[7], reverse=True)
     metric_label = "H₂ final (no cap)"
+    pbar = _get_progress_bar(
+        total=1,
+        desc="Univariate table (no saturation)",
+        file=sys.stdout,
+        bar_format=" {l_bar}{bar}|",
+    )
+    pbar.update(1)
+    pbar.close()
     print(f"\nUnivariate sensitivity ({metric}) — metric={metric_label} (descending Δmean % of base):")
     print("-" * 150)
     print(
@@ -821,6 +842,7 @@ def run_no_saturation_univariate_sweep(
     print("  Elasticity: % change in H₂ per 1% change in the factor (normalized slope).")
     print("  Range: Factor interval used in the sweep.")
     print("  Deps: Linked variables also affected by that factor (if any).")
+
     if not results_dir:
         results_dir = globals().get("results_path", None)
 
@@ -872,10 +894,11 @@ def run_no_saturation_univariate_sweep(
                 fig.savefig(base + ".png", dpi=300)
             except Exception:
                 pass
-            try:
-                fig.savefig(base + ".svg")
-            except Exception:
-                pass
+            if get_plot_save_svg():
+                try:
+                    fig.savefig(base + ".svg")
+                except Exception:
+                    pass
         plt.close(fig)
 
     df_results = pd.DataFrame(rows)
@@ -947,7 +970,7 @@ def run_saturation_univariate_sweep(
 
     sep_uni_sat = "=" * 150
     print("\n" + sep_uni_sat)
-    print("UNIVARIATE (SATURATION)".center(150))
+    print("UNIVARIATE SENTITIVITY ANALYSIS".center(150))
     print(sep_uni_sat)
     _ = metric_desc
 
@@ -1126,6 +1149,14 @@ def run_saturation_univariate_sweep(
         return name[:-6] if name.endswith("_range") else name
 
     metric_label = "H₂ final (capped)"
+    pbar = _get_progress_bar(
+        total=1,
+        desc="Univariate table (saturation)",
+        file=sys.stdout,
+        bar_format=" {l_bar}{bar}|",
+    )
+    pbar.update(1)
+    pbar.close()
     print(f"\nUnivariate sensitivity ({metric}) — metric={metric_label} (descending Δmean % of base):")
     print("-" * 150)
     print(
@@ -1176,7 +1207,8 @@ def run_saturation_univariate_sweep(
     print("  Elasticity: % change in capped H₂ per 1% change in the factor (normalized slope).")
     print("  Range: Factor interval used in the sweep.")
     print("  Deps: Linked variables also affected by that factor (if any).")
-    # Interpretation note intentionally omitted to keep output minimal.
+    print(" ")
+    print(" ")
 
     if make_plot:
         if results_dir:
@@ -1230,10 +1262,11 @@ def run_saturation_univariate_sweep(
                 fig.savefig(base + ".png", dpi=300)
             except Exception:
                 pass
-            try:
-                fig.savefig(base + ".svg")
-            except Exception:
-                pass
+            if get_plot_save_svg():
+                try:
+                    fig.savefig(base + ".svg")
+                except Exception:
+                    pass
         plt.close(fig)
 
     df_results = pd.DataFrame(csv_rows)
@@ -1279,44 +1312,80 @@ def analyze_limiting_factors_by_flow_target(
     """Sweep flow targets and record Monte Carlo H₂ totals plus limiting factors."""
 
     _ = FLOW_TARGET_FRACTURE_CONFIG
+    try:
+        flow_target_log_min = float(flow_target_log_min)
+        flow_target_log_max = float(flow_target_log_max)
+        flow_target_n_samples = int(flow_target_n_samples)
+    except Exception:
+        return None
+
+    if flow_target_log_min <= 0 or flow_target_log_max <= 0 or flow_target_n_samples <= 0:
+        return None
+
+    summaries: List[Dict[str, Any]] = []
+    flow_stats: Dict[float, Dict[str, Any]] = {}
+    print(" ")
     flow_targets = np.logspace(
         np.log10(flow_target_log_min),
         np.log10(flow_target_log_max),
-        int(flow_target_n_samples),
+        flow_target_n_samples,
     ).flatten()
-
-    n_iter = int(mc_flow_target_config.get("n_iter", 50))
-    show_progress = bool(mc_flow_target_config.get("show_progress", False))
-    save_timeseries_plots = bool(mc_flow_target_config.get("save_timeseries_plots", False))
-
-    results: List[Dict[str, Any]] = []
-    flow_stats: Dict[float, Dict[str, Any]] = {}
-
+    total_flows = len(flow_targets)
     progress_ctx = (
-        _get_progress_bar(total=len(flow_targets), desc="Analyzing flow targets", file=sys.stdout)
-        if show_progress
+        _get_progress_bar(range(total_flows), desc="Analyzing flow targets", file=sys.stdout)
+        if total_flows > 0
         else nullcontext()
     )
+    config = mc_flow_target_config
+    mc_iterations = int(config.get("n_iter", 50))
+    verbose = bool(config.get("verbose", False))
+    show_progress = bool(config.get("show_progress", False))
+    track_timeseries = bool(config.get("save_timeseries_plots", False))
+
+    total_pore_volume_m3 = float("nan")
+    porosity_used = porosity_front if porosity_front <= 1 else porosity_front / 100.0
+    if kg_rocks_dict:
+        try:
+            total_pore_volume_m3 = sum((val / density_serpentinite) * porosity_used for val in kg_rocks_dict.values())
+        except Exception:
+            total_pore_volume_m3 = float("nan")
+
+    outer_total_tons_no_sat = total_tons_no_sat if total_tons_no_sat else None
 
     with progress_ctx as pbar:
-        for flow_target in flow_targets:
-            stats = run_saturation_monte_carlo(
-                n_iter=n_iter,
+        for i, ft in enumerate(flow_targets):
+            flow_l_day = float(ft)
+            flow_m3_day = flow_l_day / 1000.0 if flow_l_day > 0 else float("nan")
+            turnover_days_total = (
+                total_pore_volume_m3 / flow_m3_day
+                if (flow_m3_day and flow_m3_day > 0 and math.isfinite(total_pore_volume_m3))
+                else float("nan")
+            )
+            config_dt_cap = mc_saturation_config.get("dt_day", 1.0)
+            if math.isfinite(turnover_days_total) and turnover_days_total > 0:
+                dt_for_flow = max(1e-4, min(config_dt_cap, turnover_days_total / 2.0))
+            else:
+                dt_for_flow = max(1e-4, float(config_dt_cap))
+
+            stats_mc = run_saturation_monte_carlo(
+                n_iter=mc_iterations,
                 volume_at_temperature=volume_at_temperature,
                 df_saturation_table=df_saturation_table,
                 mean_pressure_ranges=mean_pressure_ranges,
                 serpentinization_degree=serpentinization_degree,
                 int_fracture_spacing=int_fracture_spacing,
                 permeability_fractures=permeability_fractures,
-                flow_target=float(flow_target),
+                flow_target=ft,
                 production_rate_volumetric=production_rate_volumetric,
                 years=int(years),
                 dist_x=dist_x,
                 dist_y=dist_y,
                 dist_z=dist_z,
                 kg_rocks_dict=kg_rocks_dict,
-                show_progress=False,
-                track_timeseries=save_timeseries_plots,
+                verbose=verbose,
+                show_progress=show_progress,
+                track_timeseries=track_timeseries,
+                dt_day=dt_for_flow,
                 mc_config=mc_saturation_config,
                 n_cores=n_cores,
                 seed=seed,
@@ -1324,49 +1393,293 @@ def analyze_limiting_factors_by_flow_target(
                 density_serpentinite=density_serpentinite,
             )
 
+            if stats_mc is None or stats_mc.empty:
+                if pbar is not None:
+                    pbar.update(1)
+                continue
+
+            total_tons_sat = 0.0
+            std_total_mc = 0.0
+            mean_efficiency = 0.0
             mean_col = ("H2 total [tons]", "mean")
             std_col = ("H2 total [tons]", "std")
-            total_tons = float(stats[mean_col].sum()) if stats is not None and mean_col in stats.columns else 0.0
-            std_total = float(stats[std_col].sum()) if stats is not None and std_col in stats.columns else 0.0
-            limiter = stats.attrs.get("dominant_limiter", "-") if stats is not None else "-"
-            efficiency = (total_tons / total_tons_no_sat * 100) if total_tons_no_sat > 0 else 0.0
+            if mean_col in stats_mc.columns:
+                total_tons_sat = float(stats_mc[mean_col].sum())
 
-            row = {
-                "Flow target [L/day]": float(flow_target),
-                "H2 total [tons]": total_tons,
-                "Std total [tons]": std_total,
-                "Efficiency [%]": efficiency,
-                "Limiting factor": limiter,
+            water_cols = {
+                "diff": ("daily_diffused_H2O [kg/day]", "mean"),
+                "frac": ("daily_fractured_H2O [kg/day]", "mean"),
             }
-            results.append(row)
-            flow_stats[float(flow_target)] = row
+            delivered_water_kg_day = 0.0
+            for col in water_cols.values():
+                if col in stats_mc.columns:
+                    delivered_water_kg_day += float(stats_mc[col].sum())
 
+            water_kg_total = delivered_water_kg_day * years * 365
+            raw_total_mol_per_kg = (
+                (total_tons_sat * 1000.0) / water_kg_total / 0.002016
+                if water_kg_total > 0 else 0.0
+            )
+
+            if outer_total_tons_no_sat is not None:
+                mean_efficiency = (total_tons_sat / outer_total_tons_no_sat) * 100 if outer_total_tons_no_sat > 0 else 0.0
+            else:
+                mean_efficiency = 0.0
+            dominant_limiter = stats_mc.attrs.get("dominant_limiter", "-")
+            iter_totals_attr = stats_mc.attrs.get("iter_totals")
+            if iter_totals_attr is not None:
+                iter_totals_arr = np.asarray(iter_totals_attr, dtype=float).ravel()
+                if iter_totals_arr.size > 1:
+                    finite_vals = iter_totals_arr[np.isfinite(iter_totals_arr)]
+                    if finite_vals.size > 1:
+                        std_total_mc = float(np.std(finite_vals, ddof=0))
+            n_iter_effective = int(getattr(iter_totals_attr, "shape", [mc_iterations])[0] or mc_iterations)
+            df_all = stats_mc.attrs.get("df_all")
+            if isinstance(df_all, pd.DataFrame) and "dt_day_used [day]" in df_all.columns:
+                avg_dt_used = float(df_all["dt_day_used [day]"].mean())
+            else:
+                avg_dt_used = float("nan")
+            if isinstance(df_all, pd.DataFrame) and "Pore volume turnover [days]" in df_all.columns:
+                mean_turnover_days = float(df_all["Pore volume turnover [days]"].mean())
+            else:
+                mean_turnover_days = float("nan")
+            if isinstance(df_all, pd.DataFrame) and "Pore saturation time [days]" in df_all.columns:
+                mean_sat_time_days = float(df_all["Pore saturation time [days]"].mean())
+            else:
+                mean_sat_time_days = float("nan")
+            flow_m3_day = float(ft) / 1000.0 if ft and np.isfinite(ft) else float("nan")
+            turnover_days_total = (
+                total_pore_volume_m3 / flow_m3_day
+                if (flow_m3_day and flow_m3_day > 0 and math.isfinite(total_pore_volume_m3))
+                else float("nan")
+            )
+            std_total_report = std_total_mc
+
+            flow_stats[float(ft)] = {
+                "total_tons_sat": total_tons_sat,
+                "std_total": std_total_report,
+                "std_total_mc": std_total_mc,
+                "mean_efficiency": mean_efficiency,
+                "limiting_factor": dominant_limiter,
+                "n_iter": n_iter_effective,
+                "flow_rate_L_day": float(ft),
+                "total_flow_L_day": float(ft),
+                "Conc [mol/kg]": raw_total_mol_per_kg,
+                "pore_volume_turnover_days": turnover_days_total,
+                "pore_volume_mean_days_ranges": mean_turnover_days,
+                "pore_saturation_time_days": mean_sat_time_days,
+                "dt_day_used_mean": avg_dt_used if math.isfinite(avg_dt_used) else dt_for_flow,
+            }
+            summaries.append({
+                "Flow target [L/day]": ft,
+                "H2 total [tons]": total_tons_sat,
+                "Std total [tons]": std_total_report,
+                "Efficiency [%]": mean_efficiency,
+                "Limiting factor": dominant_limiter,
+                "Iterations": n_iter_effective,
+                "Conc [mol/kg]": raw_total_mol_per_kg,
+                "Sat time [days]": mean_sat_time_days,
+                "Turnover [days]": turnover_days_total,
+                "dt [day]": avg_dt_used if math.isfinite(avg_dt_used) else dt_for_flow,
+            })
             if pbar is not None:
                 pbar.update(1)
 
-    if not results:
-        return None
+    if not summaries:
+        print("Could not generate Monte Carlo statistics for the requested flows.")
+        return pd.DataFrame()
 
-    df_results_limiting = pd.DataFrame(results).sort_values("Flow target [L/day]")
+    df_results_limiting = pd.DataFrame(summaries).sort_values("Flow target [L/day]")
     df_results_limiting.attrs["flow_stats_per_target"] = flow_stats
 
-    if results_path:
-        os.makedirs(results_path, exist_ok=True)
-        csv_path = os.path.join(results_path, "limiting_factor_vs_flow_mc.csv")
-        df_results_limiting.to_csv(csv_path, index=False)
+    if flow_stats:
+        print("\nSummary of H₂ total per flow target:")
+        header_fmt = (
+            "{flow:<13} {iters:>5} {total_flow:>15} {h2tot:>12} {std:>10} "
+            "{conc:>12} {sat_time:>12} {turn:>12} {dt:>9} {limit:>7}"
+        )
+        header_line = header_fmt.format(
+            flow="Flow", iters="Iter", total_flow="Total flow",
+            h2tot="H₂ total", std="Std", conc="Conc",
+            sat_time="SatTime", turn="Turnover", dt="dt", limit="Limit"
+        )
+        units_line = header_fmt.format(
+            flow="[L/day]", iters="[-]", total_flow="[L/day]",
+            h2tot="[tons]", std="[tons]", conc="[mol/kg]",
+            sat_time="[days]", turn="[days]", dt="[day]", limit=""
+        )
+        dash_len = max(len(header_line), len(units_line))
+        print("-" * dash_len)
+        print(header_line)
+        print(units_line)
+        print("-" * dash_len)
+        seen_non_water = False
+        for ft in sorted(flow_stats.keys()):
+            stats_ft = flow_stats[ft]
+            iter_count_val = stats_ft.get("n_iter", mc_iterations)
+            try:
+                iter_count = int(iter_count_val)
+            except Exception:
+                iter_count = int(mc_iterations)
+            total_tons_for_flow = stats_ft.get("total_tons_sat", float("nan"))
+            sat_time_days = stats_ft.get("pore_saturation_time_days", float("nan"))
+            turnover_days = stats_ft.get("pore_volume_turnover_days", float("nan"))
+            if not seen_non_water and math.isfinite(total_tons_for_flow) and total_tons_for_flow < 10.0:
+                limit_label = "water"
+            elif math.isfinite(sat_time_days) and math.isfinite(turnover_days):
+                limit_label = "sol" if sat_time_days < turnover_days else "rate"
+                if limit_label in ("sol", "rate"):
+                    seen_non_water = True
+            else:
+                limit_label = "-"
+            stats_ft["limiting_factor"] = limit_label
+            print(
+                header_fmt.format(
+                    flow=f"{ft:.2e}",
+                    iters=str(iter_count),
+                    total_flow=f"{stats_ft.get('total_flow_L_day', ft):.2f}",
+                    h2tot=f"{stats_ft['total_tons_sat']:.2f}",
+                    std=f"{stats_ft['std_total']:.2f}",
+                    conc=f"{stats_ft.get('Conc [mol/kg]', stats_ft.get('avg_concentration_total_mol_kg', 0.0)):.4f}",
+                    sat_time=f"{stats_ft.get('pore_saturation_time_days', float('nan')):.2f}",
+                    turn=f"{stats_ft.get('pore_volume_turnover_days', float('nan')):.2f}",
+                    dt=f"{stats_ft.get('dt_day_used_mean', float('nan')):.4f}",
+                    limit=limit_label,
+                )
+            )
+        print("-" * dash_len)
 
-        fig, ax = plt.subplots(figsize=(10, 6))
-        x_vals = df_results_limiting["Flow target [L/day]"].to_numpy(dtype=float)
-        y_vals = df_results_limiting["H2 total [tons]"].to_numpy(dtype=float)
-        ax.plot(x_vals, y_vals, marker="o")
-        ax.set_xscale("log")
-        ax.set_yscale("log")
-        ax.set_xlabel("Flow Target [L/day]")
-        ax.set_ylabel("H2 Total [tons]")
-        ax.grid(True, which="both", alpha=0.3)
+        col_meanings = [
+            "Flow: water-delivery target evaluated (log sweep).",
+            "Iter: number of Monte Carlo iterations used for that target.",
+            "Total flow: equivalent volumetric delivery in L/day.",
+            "H₂ total: mean dissolved H₂ produced under saturation limits (tons).",
+            "Std: standard deviation of H₂ total (tons).",
+            "Conc: dissolved H₂ concentration per kg of delivered water (mol/kg).",
+            "SatTime: days until the pore water reaches 99% average saturation.",
+            "Turnover: bulk pore-volume turnover time (days).",
+            "Limit: dominant limiting factor (water / sol / rate / -).",
+            "dt [day]: Mean integration timestep used during the Monte Carlo runs for that flow target.",
+        ]
+        for desc in col_meanings:
+            print(f"  - {desc}")
+
+        fig, (ax1, ax2) = plt.subplots(
+            2,
+            1,
+            figsize=(10, 9),
+            sharex=True,
+            gridspec_kw={"height_ratios": [2.5, 1.2]},
+        )
+
+        flows_plot = []
+        mean_plot = []
+        min_plot = []
+        max_plot = []
+        factor_plot = []
+        turnover_plot = []
+        sat_time_plot = []
+        for ft in sorted(flow_stats.keys()):
+            stats_ft = flow_stats[ft]
+            mean_val = stats_ft["total_tons_sat"]
+            std_val = stats_ft["std_total"]
+            flows_plot.append(ft)
+            mean_plot.append(mean_val)
+            min_plot.append(mean_val - std_val)
+            max_plot.append(mean_val + std_val)
+            factor_plot.append(stats_ft["limiting_factor"])
+            turnover_plot.append(stats_ft.get("pore_volume_turnover_days", float("nan")))
+            sat_time_plot.append(stats_ft.get("pore_saturation_time_days", float("nan")))
+
+        colors = {"water": "green", "rate": "blue", "sol": "red", "-": "gray"}
+
+        for factor, color in colors.items():
+            idxs = [i for i, f in enumerate(factor_plot) if f == factor]
+            if not idxs:
+                continue
+            flows_f = np.array([flows_plot[i] for i in idxs], dtype=float)
+            mean_f = np.array([mean_plot[i] for i in idxs], dtype=float)
+            min_f = np.array([min_plot[i] for i in idxs], dtype=float)
+            max_f = np.array([max_plot[i] for i in idxs], dtype=float)
+            ax1.plot(flows_f, mean_f, color=color, marker="o", label=factor)
+            ax1.fill_between(flows_f.tolist(), min_f.tolist(), max_f.tolist(), color=color, alpha=0.15)
+
+        ax1.set_xscale("log")
+        ax1.set_yscale("log")
+        ax1.set_ylabel("H₂ Total [tons]")
+        ax1.set_title("Monte Carlo H₂ totals vs Flow target")
+        ax1.grid(True)
+        ax1.legend(title="Limiting factor", loc="best")
+
+        flows_arr = np.asarray(flows_plot, dtype=float)
+        turnover_arr = np.asarray(turnover_plot, dtype=float)
+        sat_time_arr = np.asarray(sat_time_plot, dtype=float)
+
+        mask_turnover = np.isfinite(turnover_arr) & (turnover_arr > 0)
+        mask_sat = np.isfinite(sat_time_arr) & (sat_time_arr > 0)
+
+        if mask_turnover.any():
+            ax2.plot(
+                flows_arr[mask_turnover],
+                turnover_arr[mask_turnover],
+                color="tab:purple",
+                marker="o",
+                linestyle="-",
+                label="Turnover [days]",
+            )
+
+        if mask_sat.any():
+            ax2.plot(
+                flows_arr[mask_sat],
+                sat_time_arr[mask_sat],
+                color="tab:orange",
+                marker="s",
+                linestyle="--",
+                label="Sat time [days]",
+            )
+
+        ax2.set_ylabel("Turnover / Sat time [days]")
+        ax2.set_xlabel("Flow Target [L/day]")
+        ax2.grid(True, which="both", alpha=0.3)
+        if mask_turnover.any() or mask_sat.any():
+            ax2.legend(loc="best")
+
+        ax2.set_xscale("log")
+        if (mask_turnover.any() and np.ptp(np.log10(turnover_arr[mask_turnover])) > 0.5) or \
+           (mask_sat.any() and np.ptp(np.log10(sat_time_arr[mask_sat])) > 0.5):
+            ax2.set_yscale("log")
+
         fig.tight_layout()
-        _save_plot_pair(os.path.join(results_path, "limiting_factor_vs_flow"), fig, dpi=300)
-        plt.close(fig)
+
+        if results_path:
+            os.makedirs(results_path, exist_ok=True)
+            base_path = os.path.join(results_path, "limiting_factor_vs_flow_mc")
+            plt.savefig(base_path + ".png", dpi=300)
+            if get_plot_save_svg():
+                plt.savefig(base_path + ".svg")
+
+            csv_path = base_path + ".csv"
+            df_results_limiting.to_csv(csv_path, index=False)
+            column_meanings = [
+                "Flow target [L/day]: Water delivery target evaluated (log-spaced sweep).",
+                "H2 total [tons]: Mean total H₂ produced over the reporting period (includes solubility cap).",
+                "Std total [tons]: Standard deviation of total H₂ across Monte Carlo iterations.",
+                "Efficiency [%]: Percent of the no-saturation total achieved (uses outer run total when available).",
+                "Limiting factor: Dominant limiting factor across ranges (water / sol / rate / -).",
+                "Iterations: Monte Carlo iterations effectively used for this flow target.",
+                "Conc [mol/kg]: Dissolved H₂ concentration per kg of delivered water (excluding free gas).",
+                "Sat time [days]: Time required for pore water to reach 99% average saturation.",
+                "dt: mean simulation timestep used for that target (day).",
+                "Turnover [days]: Bulk pore-volume turnover time using total pore volume ÷ flow rate.",
+            ]
+            with open(csv_path, "a", newline="") as f_meaning:
+                writer = csv.writer(f_meaning)
+                writer.writerow([])
+                writer.writerow(["# Column meanings:"])
+                for desc in column_meanings:
+                    writer.writerow([f"# {desc}"])
+
+        plt.show()
 
     return df_results_limiting
 
