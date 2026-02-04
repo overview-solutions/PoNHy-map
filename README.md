@@ -55,7 +55,7 @@ Create and activate the environment:
 
 ```bash
 conda env create -f environment.yml
-conda activate ponhy
+conda activate hydrogen
 ```
 
 From the `PoNHy` folder, run:
