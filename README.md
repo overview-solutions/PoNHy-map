@@ -49,21 +49,13 @@ If the file has errors or missing keys, PoNHy prints the issue and **exits**.
 
 PoNHy ships with a pinned Conda environment definition (`environment.yml`).
 
-### Option A - Conda (recommended)
+### Conda (recommended)
 
 Create and activate the environment:
 
 ```bash
 conda env create -f environment.yml
 conda activate ponhy
-```
-
-### Option B - Pip
-
-If you prefer pip in an existing environment:
-
-```bash
-pip install -r requirements.txt
 ```
 
 From the `PoNHy` folder, run:

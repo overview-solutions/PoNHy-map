@@ -153,6 +153,8 @@ TEMPERATURE_FILE = "/Data/Temperature_model_new.csv"  # Path to temperature file
 DENSITY_FILE = "/Data/Density_Serpentinite.csv"  # Path to density of serpentinites file [Q]
 MAGSUS_FILE = "/Data/Magsus_Serpentinite.csv"  # Path to magnetic susceptibility of serpentinites file [Q]
 
+SAVE_SVG = False  # Save SVG copies of plots alongside PNG outputs [IQ]
+
 # ================================================== Mesh parameters (IQ) ================================================== #
 # Mesh parameters. 
 DX = 750  # Units of m [IQ]
@@ -210,7 +212,7 @@ MAX_ITER_LS = 20  # Max line-search iterations per outer iteration [I]
 MAX_ITER_CG = 100  # Max conjugate-gradient iterations per outer iteration [I]
 TOL_CG = 1e-4  # CG tolerance (stopping criterion) [I]
 SAVE_PRED_RESIDUAL_NPY = False  # Save predicted/residual arrays as .npy files [I]
-SAVE_SVG = True  # Save SVG copies of plots alongside PNG outputs [IQ]
+
 
 # Regularization: alpha_x/y/z/(xx/yy/zz) -> smoothness; alpha_pgi -> PGI (petrophysical clustering).
 ALPHA_PGI = 1.0  # [I]
@@ -356,6 +358,7 @@ UNIVARIATE_ANALYSIS_CONFIG = {
     "sampling": "sobol",                     # Sampling: 'lhs' (Latin Hypercube) or 'sobol' (quasi-random) for lower variance with the same n_iter
     "sampling_seed": DEFAULT_SAMPLING_SEED,  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
     "show_progress": True,                   # show per-parameter progress bar
+    "quiet": True,                            # suppress univariate console summary (keep progress bars)
     "make_plot": True,                       # Save parameter-vs-H2 curve plots for the sweep (PNG/SVG)
     "worker_count": N_CORES,                 # Use >1 to parallelize the inner MC per factor value; default to all available cores
 }
@@ -1313,8 +1316,7 @@ if RUN_H2_QUANTIFICATION:
     density_export_cells = density_model_no_info
     magsus_export_cells = magsus_model_no_info
 
-    # - Load external temperature CSV, interpolate onto active cells.
-    # - Define the temperature bins used in later Monte Carlo calculations.
+    # Load external temperature CSV, interpolate onto active cells.
     temperature_csv = np.loadtxt(temperature_filename, delimiter=',', skiprows=1)
     x_csv_temperature = temperature_csv[:, 0]
     y_csv_temperature = temperature_csv[:, 1]
@@ -1325,14 +1327,12 @@ if RUN_H2_QUANTIFICATION:
     temperature_ranges = {tr: None for tr in TEMP_BINS}
 
         
-    # Calculate depths for specified temperature extremes 
     # Estimate depths associated with temperature range extremes.
     depths_for_temp_extremes = compute_temp_range_depths(temperature_mesh, xyz_active, temperature_ranges)
         
     # Create a mask to identify non-NaN values in the density data (i.e., valid serpentinite cells)
     mask_not_nan = ~np.isnan(density_export_cells)
 
-    # Calculate volumes of rock and temperature-based masks for serpentinite cells
     # Compute rock volumes and temperature masks for serpentinite cells.
     volume_density_magsus, volume_at_temperature, volume_at_temperature_total_100_500, combined_masks, combined_mask_total_100_500 = compute_rock_volumes_and_masks(
         temperature_mesh,

@@ -12,7 +12,7 @@
 # - For N_CORES, use 0 or "auto" to auto-detect CPU count.
 
 # ================================ Run flags ================================
-RUN_INVERSION = true  # Set True to run the inversion routine.
+RUN_INVERSION = false  # Set True to run the inversion routine.
 RUN_H2_QUANTIFICATION = true  # Set True to run the H2 quantification routine.
 
 # ================================ Paths (IQ) ================================
@@ -38,6 +38,8 @@ DB_DIR = "/Data/DB0"  # Path to H2 database directory [Q]
 TEMPERATURE_FILE = "/Data/Temperature_model_new.csv"  # Path to temperature file [Q]
 DENSITY_FILE = "/Data/Density_Serpentinite.csv"  # Path to density of serpentinites file [Q]
 MAGSUS_FILE = "/Data/Magsus_Serpentinite.csv"  # Path to magnetic susceptibility of serpentinites file [Q]
+
+SAVE_SVG = false  # Save SVG copies of plots alongside PNG outputs [IQ]
 
 # ================================ Mesh parameters (IQ) ================================
 # Mesh parameters.
@@ -95,6 +97,7 @@ MAX_ITER_LS = 20  # Max line-search iterations per outer iteration [I]
 MAX_ITER_CG = 100  # Max conjugate-gradient iterations per outer iteration [I]
 TOL_CG = 1e-4  # CG tolerance (stopping criterion) [I]
 SAVE_PRED_RESIDUAL_NPY = false  # Save predicted/residual arrays as .npy files [I]
+
 
 # Regularization: alpha_x/y/z/(xx/yy/zz) -> smoothness; alpha_pgi -> PGI (petrophysical clustering).
 ALPHA_PGI = 1.0  # [I]
@@ -233,6 +236,7 @@ baseline_n_iter = 500  # iterations for the baseline run (all factors = 1.0)
 sampling = "sobol"  # Sampling: 'lhs' or 'sobol' (quasi-random) for lower variance
 sampling_seed = 12345  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
 show_progress = true  # show per-parameter progress bar
+quiet = true  # suppress univariate console summary (keep progress bars)
 make_plot = true  # Save parameter-vs-H2 curve plots for the sweep (PNG/SVG)
 worker_count = 0  # Use >1 to parallelize the inner MC per factor value; default to all available cores
 

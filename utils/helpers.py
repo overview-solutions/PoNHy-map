@@ -87,20 +87,15 @@ def _compute_mc_chunk_size(n_iter: int, range_count: int, target_updates: int = 
     return max(1, min(total_iter, chunk_estimate))
 
 
-def _get_progress_bar(*args, file=None, **kwargs):
-    """Return a tqdm progress bar that avoids writing to the output log."""
-    if file is None:
-        import sys
-
-        file = sys.stderr
-
+def _get_progress_bar(*args, file=sys.stdout, **kwargs):
+    """Return a tqdm progress bar that auto-disables when stdout is redirected."""
     if "disable" in kwargs:
         return tqdm(*args, file=file, **kwargs)
 
     target_file = file
     try:
-        if file is not None and hasattr(file, "terminal"):
-            orig = getattr(file, "terminal")
+        if file is sys.stdout and hasattr(sys.stdout, "terminal"):
+            orig = getattr(sys.stdout, "terminal")
             if orig is not None:
                 target_file = orig
     except Exception:
