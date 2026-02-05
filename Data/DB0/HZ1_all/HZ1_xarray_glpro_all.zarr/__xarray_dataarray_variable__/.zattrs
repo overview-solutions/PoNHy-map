@@ -1,0 +1,8 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "pressure",
+        "temperature",
+        "w2r",
+        "fields"
+    ]
+}
