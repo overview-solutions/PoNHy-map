@@ -53,7 +53,6 @@ from utils.helpers import (
     _coerce_config_value,
     _apply_text_config,
     _format_value_for_filename,
-    _get_convergence_status,
     _get_progress_bar,
     _is_missing,
     _load_text_config,
@@ -536,10 +535,26 @@ if RUN_INVERSION:
     assert GRAV_DATA_FILENAME is not None, "Resolved GRAV_DATA_FILENAME is required"
     assert MAG_DATA_FILENAME is not None, "Resolved MAG_DATA_FILENAME is required"
 
-    # Resolve the initial model CSV path for the inversion.
-    INITIAL_MODEL_FILENAME = _resolve_base_dir_path(BASE_DIR, INITIAL_MODEL)
-    assert INITIAL_MODEL_FILENAME is not None, "Resolved INITIAL_MODEL_FILENAME is required"
-    INITIAL_MODEL_DATA = np.loadtxt(INITIAL_MODEL_FILENAME, delimiter=",", skiprows=1)
+     # Resolve and load the initial model CSV path for the inversion only when enabled.
+    if USE_INITIAL_MODEL:
+        INITIAL_MODEL_FILENAME = _resolve_base_dir_path(BASE_DIR, INITIAL_MODEL)
+        assert INITIAL_MODEL_FILENAME is not None, "Resolved INITIAL_MODEL_FILENAME is required"
+        if os.path.isdir(INITIAL_MODEL_FILENAME):
+            raise IsADirectoryError(
+                f"INITIAL_MODEL points to a directory: {INITIAL_MODEL_FILENAME}. "
+                "Set INITIAL_MODEL to a CSV file or disable USE_INITIAL_MODEL."
+            )
+        if not os.path.exists(INITIAL_MODEL_FILENAME):
+            raise FileNotFoundError(
+                f"INITIAL_MODEL file not found: {INITIAL_MODEL_FILENAME}. "
+                "Update INITIAL_MODEL to a valid CSV path or disable USE_INITIAL_MODEL."
+            )
+        INITIAL_MODEL_DATA = np.loadtxt(INITIAL_MODEL_FILENAME, delimiter=",", skiprows=1)
+    else:
+        INITIAL_MODEL_FILENAME = None
+        INITIAL_MODEL_DATA = np.array([])
+
+    
 
     # Redirect stdout to a file-based logger for the inversion output.
     CUSTOM_PRINTER = CustomPrint(OUTPUT_FILE_PATH)
@@ -959,8 +974,11 @@ if RUN_INVERSION:
     )
     pgi_model_no_info = inv.run(m0)
 
-    # Capture optimizer stop reason and convergence status for reporting.
-    convergence_status, converged, opt_iter, opt_max_iter = _get_convergence_status(opt)
+    # Capture optimizer iteration counts for reporting.
+    opt_iter = getattr(opt, "iter", None)
+    if opt_iter is None:
+        opt_iter = getattr(opt, "iterNum", None)
+    opt_max_iter = getattr(opt, "maxIter", None)
 
     # Plot the evolution of data/regularization misfits during inversion.
     plot_misfit_evolution(SAVE_VALUES_DIRECTIVE, results_path=RESULTS_PATH)
@@ -1115,14 +1133,12 @@ if RUN_INVERSION:
     SECONDS = EXECUTION_TIME % 60
     FORMATTED_TIME = f"{int(HOURS)}:{int(MINUTES)}:{int(SECONDS)}"
 
-    # Print the inversion results summary (timing, convergence, outputs).
+    # Print the inversion results summary (timing, outputs, iterations).
     print_inversion_results_summary(
         separator=SEPARATOR,
         section_separator=SECTION_SEPARATOR,
         results_path=RESULTS_PATH,
         formatted_time=FORMATTED_TIME,
-        convergence_status=convergence_status,
-        converged=converged,
         opt_iter=opt_iter,
         opt_max_iter=opt_max_iter,
     )

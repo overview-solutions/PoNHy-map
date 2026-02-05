@@ -315,8 +315,9 @@ def _report_missing_params(missing: Sequence[str], routine: str) -> None:
 def _print_header() -> None:
     print("\n" + "=" * 150)
     print("  PoNHy - Potential for Natural Hydrogen")
-    print("  Developed by: Rodolfo Christiansen (LIAG)")
-    print("  Contact: rodo_christiansen@hotmail.com - Rodolfo.Christiansen@liag-institut.de ")
+    print("  Developed by: Rodolfo Christiansen (LIAG- Institute for Applied Geophysics) and the PoNHy Team")
+    print("  Contact:  Rodolfo.Christiansen@liag-institut.de - rodo_christiansen@hotmail.com")
+    print("  MIT License: Free to use, modify, and redistribute with attribution")
     print("=" * 150)
 
 

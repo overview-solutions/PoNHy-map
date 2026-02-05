@@ -590,17 +590,12 @@ def print_inversion_results_summary(
     section_separator: str,
     results_path: str,
     formatted_time: str,
-    convergence_status: Optional[str] = None,
-    converged: Optional[bool] = None,
     opt_iter: Optional[int] = None,
     opt_max_iter: Optional[int] = None,
 ) -> None:
     """Print the inversion results summary block."""
-    status_label = "Process completed"
-    if converged is not None:
-        status_label = f"Process completed — Converged: {'YES' if converged else 'NO'}"
     print("\n" + section_separator)
-    print(f"{status_label:^{REPORT_WIDTH}}")
+    print(f"{'Process completed':^{REPORT_WIDTH}}")
     print(section_separator)
     print("\nAll main results have been saved:")
     print(f"  • Density model:         {os.path.join(results_path, 'Density_complete_model.csv')}")
@@ -609,9 +604,5 @@ def print_inversion_results_summary(
     print(f"  • Serpentinite density:  {os.path.join(results_path, 'Density_Serpentinite.csv')}")
     print(f"  • Serpentinite magsus:   {os.path.join(results_path, 'Magsus_Serpentinite.csv')}")
     print("\n" + f"Execution time: {formatted_time}")
-    if convergence_status:
-        print(f"Convergence status: {convergence_status}")
-    if converged is not None:
-        print(f"Converged: {'YES' if converged else 'NO'}")
     if opt_iter is not None and opt_max_iter is not None:
         print(f"Iterations: {opt_iter}/{opt_max_iter}")
