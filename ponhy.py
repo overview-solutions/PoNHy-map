@@ -101,7 +101,6 @@ from utils.reporting import (
 from utils.saturation import run_saturation_workflow
 from utils.uncertainties import (
     analyze_limiting_factors_by_flow_target,
-    run_dt_convergence_sweep,
     run_fracture_monte_carlo_simulation,
     run_mc_convergence_sweep,
     run_no_saturation_univariate_sweep,
@@ -374,15 +373,6 @@ MC_CONVERGENCE_SWEEP_CONFIG = {
     "silence_runs": True                  # Suppress textual output during sweep runs (keep progress bar)
 }
 
-# Time steps are automatic. If you want to test your own time steps, set RUN_DT_CONVERGENCE_SWEEP = True
-RUN_DT_CONVERGENCE_SWEEP = False
-DT_CONVERGENCE_SWEEP_CONFIG = {
-    "dt_values": [10, 7, 5, 3, 1, 1/100, 1/1000, 1/5000, 1/10000],   # Time-step values (in days) to evaluate
-    "n_iter": 5000,                           # MC iterations per dt value (fallback to MC_SATURATION_CONFIG if None)
-    "result_column": "H2 total [tons]",     # Column used to evaluate convergence
-    "silence_runs": True,                   # Suppress textual output during sweep runs (keep progress bar)
-    "save_plot": True,                      # Save plot of mean ± std vs dt_day
-}
 # ========================================================  FLOW TARGETS ========================================================
 # Used to run tests across flow-target values to evaluate outputs and which factors are limiting.
 RUN_ANALYZE_LIMITING_FACTORS = True  # Boolean to control whether analyze_limiting_factors_by_flow_target is executed
@@ -462,8 +452,7 @@ CONFIG_PARAM_NAMES = [
     "T_REF_RANGE", "N_CORES", "RUN_MONTECARLO_FAULT", "FAULT_MC_N_ITER",
     "FLOW_TARGET_FRACTURE_CONFIG", "MC_NO_SATURATION_CONFIG", "MC_SATURATION_CONFIG",
     "RUN_UNIVARIATE_ANALYSIS_NO_SAT", "RUN_UNIVARIATE_ANALYSIS_SAT", "UNIVARIATE_ANALYSIS_CONFIG",
-    "RUN_MC_CONVERGENCE_SWEEP", "MC_CONVERGENCE_SWEEP_CONFIG", "RUN_DT_CONVERGENCE_SWEEP",
-    "DT_CONVERGENCE_SWEEP_CONFIG", "RUN_ANALYZE_LIMITING_FACTORS", "FLOW_TARGET_LOG_MIN",
+    "RUN_MC_CONVERGENCE_SWEEP", "MC_CONVERGENCE_SWEEP_CONFIG", "RUN_ANALYZE_LIMITING_FACTORS", "FLOW_TARGET_LOG_MIN",
     "FLOW_TARGET_LOG_MAX", "FLOW_TARGET_N_SAMPLES", "MC_FLOW_TARGET_CONFIG",
 ]
 
@@ -1170,8 +1159,7 @@ QUANT_PARAM_NAMES = [
     "MOLAR_MASS_H2O", "V_REF_SYNTHETIC", "T_REF_RANGE", "SAVE_SVG", "RUN_MONTECARLO_FAULT", "FAULT_MC_N_ITER",
     "FLOW_TARGET_FRACTURE_CONFIG", "MC_NO_SATURATION_CONFIG", "MC_SATURATION_CONFIG",
     "RUN_UNIVARIATE_ANALYSIS_NO_SAT", "RUN_UNIVARIATE_ANALYSIS_SAT", "UNIVARIATE_ANALYSIS_CONFIG",
-    "RUN_MC_CONVERGENCE_SWEEP", "MC_CONVERGENCE_SWEEP_CONFIG", "RUN_DT_CONVERGENCE_SWEEP",
-    "DT_CONVERGENCE_SWEEP_CONFIG", "RUN_ANALYZE_LIMITING_FACTORS", "FLOW_TARGET_LOG_MIN",
+    "RUN_MC_CONVERGENCE_SWEEP", "MC_CONVERGENCE_SWEEP_CONFIG", "RUN_ANALYZE_LIMITING_FACTORS", "FLOW_TARGET_LOG_MIN",
     "FLOW_TARGET_LOG_MAX", "FLOW_TARGET_N_SAMPLES", "MC_FLOW_TARGET_CONFIG", "lithologies_dict",
     "serpentinization_data", "serp_corr_percentage",
 ]
@@ -1199,9 +1187,6 @@ if RUN_H2_QUANTIFICATION:
 
     if not RUN_MC_CONVERGENCE_SWEEP and "MC_CONVERGENCE_SWEEP_CONFIG" in missing_quant:
         missing_quant.remove("MC_CONVERGENCE_SWEEP_CONFIG")
-
-    if not RUN_DT_CONVERGENCE_SWEEP and "DT_CONVERGENCE_SWEEP_CONFIG" in missing_quant:
-        missing_quant.remove("DT_CONVERGENCE_SWEEP_CONFIG")
 
     if not RUN_ANALYZE_LIMITING_FACTORS:
         for name in ["FLOW_TARGET_LOG_MIN", "FLOW_TARGET_LOG_MAX", "FLOW_TARGET_N_SAMPLES", "MC_FLOW_TARGET_CONFIG"]:
@@ -1699,7 +1684,7 @@ if RUN_H2_QUANTIFICATION:
         print("Skipped univariate sensitivity (no-saturation) (RUN_UNIVARIATE_ANALYSIS_NO_SAT=False)")
 
 
-    if RUN_MC_CONVERGENCE_SWEEP or RUN_DT_CONVERGENCE_SWEEP:
+    if RUN_MC_CONVERGENCE_SWEEP:
         # ====================================================================================================================================================
         print("\n" + separator)
         print(f"{'CONVERGENCE SWEEPS':^150}")
@@ -1719,19 +1704,6 @@ if RUN_H2_QUANTIFICATION:
         print("")
         print("Skipped MC convergence sweep (RUN_MC_CONVERGENCE_SWEEP=False).")
 
-
-    if RUN_DT_CONVERGENCE_SWEEP:
-        # Evaluate convergence vs time-step size for saturation MC.
-        run_dt_convergence_sweep(
-            DT_CONVERGENCE_SWEEP_CONFIG,
-            mc_kwargs=mc_common_kwargs,
-            results_dir=results_path,
-            mc_saturation_config=MC_SATURATION_CONFIG,
-            seed=SEED,
-        )
-    else:
-        print("")
-        print("Skipped dt_day convergence sweep (RUN_DT_CONVERGENCE_SWEEP=False).")
 
 
     if RUN_ANALYZE_LIMITING_FACTORS:

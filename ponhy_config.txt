@@ -162,7 +162,7 @@ MOLAR_MASS_H2 = 0.00201588  # kg/mol [Q]
 MOLAR_MASS_H2O = 0.01801528  # kg/mol [Q]
 
 # ================================ Serpentinization front velocities (Q) ================================
-# Serpentinization front velocities (cm/day). You must provide one reference point with T)
+# Serpentinization front velocities (cm/day). You must provide one reference point with T
 V_REF_SYNTHETIC = 1.272e-5  # cm/day. Reference velocity values from Malvoisin & Brunet (2014) [Q]
 T_REF_RANGE = "300_325"  # Temperature range in °C for the reference velocity from Malvoisin & Brunet (2014) [Q]
 
@@ -173,7 +173,7 @@ N_CORES = 0  # [Q] (0 or "auto" -> use all cores)
 # ================================ Water flow simulation in faults (Q) ================================
 # Geometry/hydraulics to estimate if the target flow can be reached.
 RUN_MONTECARLO_FAULT = true  # Run the Monte Carlo flow simulation [Q]
-FAULT_MC_N_ITER = 2500  # number of Monte Carlo realizations (iterations) for the fault-flow simulation [Q]
+FAULT_MC_N_ITER = 5000  # number of Monte Carlo realizations (iterations) for the fault-flow simulation [Q]
 
 [FLOW_TARGET_FRACTURE_CONFIG]
 L_fault = 50000  # [m] along-strike length of the fault segment considered
@@ -195,7 +195,7 @@ connection_fraction_max = 0.50  # [-] max hydraulically connected fraction
 # ================================ No saturation (Q) ================================
 # Controls on the computation of H2 production with no solubility or saturation limits (purely theoretical output).
 [MC_NO_SATURATION_CONFIG]
-n_iter = 2500  # Number of Monte Carlo iterations
+n_iter = 5000 # Number of Monte Carlo iterations
 verbose = true  # Show detailed results
 sampling = "sobol"  # Sampling mode: "uniform", "lhs", or "sobol"
 sampling_seed = 12345  # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility (None for random)
@@ -209,7 +209,7 @@ show_progress = true  # When True, display a tqdm bar during the volumetric Mont
 # ================================ Saturation (Q) ================================
 # Physical and geochemical uncertainties for the calculation with saturation limits
 [MC_SATURATION_CONFIG]
-n_iter = 2500  # Number of Monte Carlo iterations
+n_iter = 5000  # Number of Monte Carlo iterations
 sampling = "sobol"  # Sampling: 'lhs' or 'sobol' (quasi-random) for lower variance
 sampling_seed = 12345  # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility (LHS/Sobol)
 dt_day = 1  # Time step for the within-day integration loop [day] (not yet implemented correctly)
@@ -230,9 +230,9 @@ RUN_UNIVARIATE_ANALYSIS_NO_SAT = true  # enable univariate sweep for the no-satu
 RUN_UNIVARIATE_ANALYSIS_SAT = true  # enable univariate sweep for the saturation MC [Q]
 
 [UNIVARIATE_ANALYSIS_CONFIG]
-n_points = 25  # number of factor values between (min,max)
+n_points = 50  # number of factor values between (min,max)
 n_rep = 100  # replicates per point
-baseline_n_iter = 2500  # iterations for the baseline run (all factors = 1.0)
+baseline_n_iter = 5000  # iterations for the baseline run (all factors = 1.0)
 sampling = "sobol"  # Sampling: 'lhs' or 'sobol' (quasi-random) for lower variance
 sampling_seed = 12345  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
 show_progress = true  # show per-parameter progress bar
@@ -242,7 +242,7 @@ worker_count = 0  # Use >1 to parallelize the inner MC per factor value; default
 
 # ================================ Convergence sweeps (Q) ================================
 # Convergence sweep for saturation analysis (How many iterations are needed for convergence?).
-RUN_MC_CONVERGENCE_SWEEP = false
+RUN_MC_CONVERGENCE_SWEEP = true
 
 [MC_CONVERGENCE_SWEEP_CONFIG]
 iter_values = [10, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]  # Monte Carlo iterations to evaluate
@@ -253,16 +253,6 @@ tolerance_std_pct = 5.0  # Allowed change (%) in std when doubling n_iter
 save_plot = true  # Save convergence plot alongside CSV (when run)
 silence_runs = true  # Suppress textual output during sweep runs (keep progress bar)
 
-# Time steps are automatic. If you want to test your own time steps, set RUN_DT_CONVERGENCE_SWEEP = True
-RUN_DT_CONVERGENCE_SWEEP = false
-
-[DT_CONVERGENCE_SWEEP_CONFIG]
-dt_values = [10, 7, 5, 3, 1, 0.01, 0.001, 0.0002, 0.0001]  # Time-step values (in days) to evaluate
-n_iter = 2500  # MC iterations per dt value (fallback to MC_SATURATION_CONFIG if None)
-result_column = "H2 total [tons]"  # Column used to evaluate convergence
-silence_runs = true  # Suppress textual output during sweep runs (keep progress bar)
-save_plot = true  # Save plot of mean ± std vs dt_day
-
 # ================================ Flow targets ================================
 # Used to run tests across flow-target values to evaluate outputs and which factors are limiting.
 RUN_ANALYZE_LIMITING_FACTORS = true  # Boolean to control whether analyze_limiting_factors_by_flow_target is executed
@@ -271,7 +261,7 @@ FLOW_TARGET_LOG_MAX = 1e10  # [L/day] maximum
 FLOW_TARGET_N_SAMPLES = 30  # [-] number of flow targets (the x axis is divided in this number)
 
 [MC_FLOW_TARGET_CONFIG]
-n_iter = 2500  # Number of Monte Carlo iterations per flow target
+n_iter = 5000  # Number of Monte Carlo iterations per flow target
 verbose = false  # Show detailed results
-show_progress = false  # Show progress bar
+show_progress = false  # Show progress bar for each target
 save_timeseries_plots = false  # Save debug plots for timeseries totals per flow
