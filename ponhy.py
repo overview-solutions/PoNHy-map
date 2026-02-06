@@ -293,7 +293,7 @@ N_CORES = None  # [Q]
 # ===================================================== WATER FLOW SIMULATION IN FAULTS (Q) ====================================================== #
 # Geometry/hydraulics to estimate if the target flow can be reached.
 RUN_MONTECARLO_FAULT = True  # Run the Monte Carlo flow simulation [Q]
-FAULT_MC_N_ITER = 100  # number of Monte Carlo realizations (iterations) for the fault-flow simulation [Q]
+FAULT_MC_N_ITER = 5000  # number of Monte Carlo realizations (iterations) for the fault-flow simulation [Q]
 FLOW_TARGET_FRACTURE_CONFIG = {
     "L_fault": 50000,                 # [m] along-strike length of the fault segment considered
     "width_min": 100,                 # [m] minimum width of the fault zone
@@ -315,7 +315,7 @@ FLOW_TARGET_FRACTURE_CONFIG = {
 # ============================================================== NO SATURATION (Q) =============================================================== #
 # Controls on the computation of H2 production with no solubility or saturation limits (purely theoretical output).
 MC_NO_SATURATION_CONFIG = {
-    "n_iter": 50,                      # Number of Monte Carlo iterations
+    "n_iter": 5000,                      # Number of Monte Carlo iterations
     "verbose": True,                     # Show detailed results
     "sampling": "sobol",                 # Sampling mode: "uniform", "lhs", or "sobol"
     "sampling_seed": DEFAULT_SAMPLING_SEED,  # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility (None for random)
@@ -331,7 +331,7 @@ MC_NO_SATURATION_CONFIG = {
 # ================================================================ SATURATION (Q) ================================================================ #
 # Physical and geochemical uncertainties for the calculation with saturation limits
 MC_SATURATION_CONFIG = {
-    "n_iter": 50,                          # Number of Monte Carlo iterations
+    "n_iter": 5000,                          # Number of Monte Carlo iterations
     "sampling": "sobol",                      # Sampling: 'lhs' (Latin Hypercube) or 'sobol' (quasi-random) for lower variance with the same n_iter
     "sampling_seed": DEFAULT_SAMPLING_SEED,   # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility of sampling (LHS/Sobol)
     "dt_day": 1,                              # Time step for the within-day integration loop [day] (not yet implemented correctly)
@@ -351,9 +351,9 @@ MC_SATURATION_CONFIG = {
 RUN_UNIVARIATE_ANALYSIS_NO_SAT = True  # enable univariate sweep for the no-saturation MC [Q]
 RUN_UNIVARIATE_ANALYSIS_SAT = True # enable univariate sweep for the saturation MC [Q]
 UNIVARIATE_ANALYSIS_CONFIG = {
-    "n_points": 5,                          # number of factor values between (min,max)
-    "n_rep": 10,                            # replicates per point
-    "baseline_n_iter": 500,                 # iterations for the baseline run (all factors = 1.0)
+    "n_points": 50,                          # number of factor values between (min,max)
+    "n_rep": 100,                            # replicates per point
+    "baseline_n_iter": 5000,                 # iterations for the baseline run (all factors = 1.0)
     "sampling": "sobol",                     # Sampling: 'lhs' (Latin Hypercube) or 'sobol' (quasi-random) for lower variance with the same n_iter
     "sampling_seed": DEFAULT_SAMPLING_SEED,  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
     "show_progress": True,                   # show per-parameter progress bar
@@ -363,7 +363,7 @@ UNIVARIATE_ANALYSIS_CONFIG = {
 
 # ============================================================ CONVERGENCE SWEEPS ============================================================= #
 # Convergence sweep for saturation analysis (How many iterations are needed for convergence?). 
-RUN_MC_CONVERGENCE_SWEEP = True
+RUN_MC_CONVERGENCE_SWEEP = False
 MC_CONVERGENCE_SWEEP_CONFIG = {
     "iter_values": [10, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000],  # Monte Carlo iterations to evaluate
     "reuse_from_single_run": False,       # If True, reuse a single large run instead of running per n_iter
@@ -378,7 +378,7 @@ MC_CONVERGENCE_SWEEP_CONFIG = {
 RUN_DT_CONVERGENCE_SWEEP = False
 DT_CONVERGENCE_SWEEP_CONFIG = {
     "dt_values": [10, 7, 5, 3, 1, 1/100, 1/1000, 1/5000, 1/10000],   # Time-step values (in days) to evaluate
-    "n_iter": 10,                           # MC iterations per dt value (fallback to MC_SATURATION_CONFIG if None)
+    "n_iter": 5000,                           # MC iterations per dt value (fallback to MC_SATURATION_CONFIG if None)
     "result_column": "H2 total [tons]",     # Column used to evaluate convergence
     "silence_runs": True,                   # Suppress textual output during sweep runs (keep progress bar)
     "save_plot": True,                      # Save plot of mean ± std vs dt_day
@@ -391,7 +391,7 @@ FLOW_TARGET_LOG_MAX = 1e10           # [L/day] maximum
 FLOW_TARGET_N_SAMPLES = 30           # [-] number of flow targets (the x axis is divided in this number)
 
 MC_FLOW_TARGET_CONFIG = {
-    "n_iter": 50,                  # Number of Monte Carlo iterations per flow target
+    "n_iter": 5000,                  # Number of Monte Carlo iterations per flow target
     "verbose": False,                 # Show detailed results
     "show_progress": False,           # Show progress bar
     "save_timeseries_plots": True,   # Save debug plots for timeseries totals per flow
@@ -470,7 +470,17 @@ CONFIG_PARAM_NAMES = [
 
 CONFIG_TEXT_FILE = os.path.join(os.path.dirname(__file__), "ponhy_config.txt")
 # Load optional text-based overrides for config parameters.
-text_config = _load_text_config(CONFIG_TEXT_FILE, CONFIG_PARAM_NAMES)
+USE_TEXT_CONFIG = True  # Set to False to ignore the text config file and use only the hardcoded defaults in this module.
+
+if __name__ == "__main__":
+    try:
+        response = input("Use config file 'ponhy_config.txt'? [Y/n]: ").strip().lower()
+        if response in {"n", "no", "0", "false"}:
+            USE_TEXT_CONFIG = False
+    except (EOFError, KeyboardInterrupt):
+        USE_TEXT_CONFIG = True
+
+text_config = _load_text_config(CONFIG_TEXT_FILE, CONFIG_PARAM_NAMES) if USE_TEXT_CONFIG else None
 if text_config is not None:
     # Apply config overrides to module globals with type-aware coercion.
     _apply_text_config(text_config, CONFIG_PARAM_NAMES, globals())
@@ -1689,6 +1699,13 @@ if RUN_H2_QUANTIFICATION:
         print("Skipped univariate sensitivity (no-saturation) (RUN_UNIVARIATE_ANALYSIS_NO_SAT=False)")
 
 
+    if RUN_MC_CONVERGENCE_SWEEP or RUN_DT_CONVERGENCE_SWEEP:
+        # ====================================================================================================================================================
+        print("\n" + separator)
+        print(f"{'CONVERGENCE SWEEPS':^150}")
+        print(separator)
+        # ====================================================================================================================================================
+
     if RUN_MC_CONVERGENCE_SWEEP:
         base_df_mc = stats_mc_saturation.attrs.get("df_all") if stats_mc_saturation is not None else None
         # Evaluate convergence vs iteration count for the saturation MC.
@@ -1718,6 +1735,12 @@ if RUN_H2_QUANTIFICATION:
 
 
     if RUN_ANALYZE_LIMITING_FACTORS:
+        # ====================================================================================================================================================
+        print("\n" + separator)
+        print(f"{'FLOW TARGETS':^150}")
+        print(separator)
+        # ====================================================================================================================================================
+
         # Analyze limiting factors across a range of flow-target values.
         analyze_limiting_factors_by_flow_target(
             FLOW_TARGET_FRACTURE_CONFIG=FLOW_TARGET_FRACTURE_CONFIG,
