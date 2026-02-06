@@ -474,6 +474,7 @@ def plot_serpentinization_heatmap(
     values,
     *,
     results_path,
+    save_svg: bool = True,
 ):
     """Create a density-magnetic susceptibility heatmap annotated with serpentinization degree."""
     filtered_density = density_export_cells[mask_not_nan]
@@ -510,7 +511,8 @@ def plot_serpentinization_heatmap(
     file_name_png = os.path.join(results_path, "serpentinization_heat_map.png")
     file_name_svg = os.path.join(results_path, "serpentinization_heat_map.svg")
     fig.savefig(file_name_png)
-    fig.savefig(file_name_svg)
+    if save_svg:
+        fig.savefig(file_name_svg)
     plt.show()
     plt.close(fig)
     return file_name_png, file_name_svg

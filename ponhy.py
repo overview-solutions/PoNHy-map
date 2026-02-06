@@ -1391,6 +1391,7 @@ if RUN_H2_QUANTIFICATION:
         y_points,
         values,
         results_path=results_path,
+        save_svg=SAVE_SVG,
     )
 
     # Print a compact summary of the inversion/mesh configuration used for quantification.

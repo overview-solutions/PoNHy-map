@@ -718,7 +718,8 @@ def plot_lab_data_panels(p, *, results_path: Optional[str] = None):
     plt.tight_layout()
     if results_path:
         plt.savefig(os.path.join(results_path, "lab_data.png"))
-        plt.savefig(os.path.join(results_path, "lab_data.svg"))
+        if get_plot_save_svg():
+            plt.savefig(os.path.join(results_path, "lab_data.svg"))
     plt.show()
     plt.close()
 
@@ -845,9 +846,10 @@ def plot_h2_production_summary(
     plt.tight_layout()
     if results_path:
         file_name_png = os.path.join(results_path, "combined_h2_and_volume.png")
-        file_name_svg = os.path.join(results_path, "combined_h2_and_volume.svg")
         plt.savefig(file_name_png)
-        plt.savefig(file_name_svg)
+        if get_plot_save_svg():
+            file_name_svg = os.path.join(results_path, "combined_h2_and_volume.svg")
+            plt.savefig(file_name_svg)
     plt.show()
 
 
