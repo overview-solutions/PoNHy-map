@@ -1246,7 +1246,7 @@ def analyze_limiting_factors_by_flow_target(
                 if col in stats_mc.columns:
                     delivered_water_kg_day += float(stats_mc[col].sum())
 
-            water_kg_total = delivered_water_kg_day * years * 365
+            water_kg_total = delivered_water_kg_day * float(params.years) * 365
             raw_total_mol_per_kg = (
                 (total_tons_sat * 1000.0) / water_kg_total / 0.002016
                 if water_kg_total > 0 else 0.0
@@ -1482,9 +1482,9 @@ def analyze_limiting_factors_by_flow_target(
 
         fig.tight_layout()
 
-        if results_path:
-            os.makedirs(results_path, exist_ok=True)
-            base_path = os.path.join(results_path, "limiting_factor_vs_flow_mc")
+        if params.results_path:
+            os.makedirs(params.results_path, exist_ok=True)
+            base_path = os.path.join(params.results_path, "limiting_factor_vs_flow_mc")
             plt.savefig(base_path + ".png", dpi=300)
             if get_plot_save_svg():
                 plt.savefig(base_path + ".svg")

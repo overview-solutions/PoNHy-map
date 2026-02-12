@@ -127,7 +127,16 @@ def run_no_saturation_workflow(params: NoSaturationWorkflowParams):
 
     if run_prints:
         print_no_saturation_report(df_no_saturation)
-        print_no_saturation_summary_report(build_no_saturation_summary_report_params(locals()))
+        no_saturation_summary_scope = {
+            "df_no_saturation": df_no_saturation,
+            "total_tons_no_sat": total_tons_no_sat,
+            "total_kg_rocks": total_kg_rocks,
+            "years": years,
+            "no_sat_csv_path": no_sat_csv_path,
+        }
+        print_no_saturation_summary_report(
+            build_no_saturation_summary_report_params(no_saturation_summary_scope)
+        )
 
     return (
         results_temp_volumetric,

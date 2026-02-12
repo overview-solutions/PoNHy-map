@@ -301,6 +301,17 @@ flow_target_log_max = cfg.flow_target_log_max
 flow_target_n_samples = cfg.flow_target_n_samples
 mc_flow_target_config = asdict(cfg.mc_flow_target_config)
 
+# Runtime-only values that should not live in the config object.
+runtime_state: Dict[str, Any] = {"surface_area_per_km3": None}
+
+
+def _compute_surface_area_per_km3(dist_x: float, dist_y: float, dist_z: float) -> float:
+    original_volume_m3 = 1000 ** 3  # 1 km³
+    voxel_volume_m3 = dist_x * dist_y * dist_z
+    total_voxels = original_volume_m3 / voxel_volume_m3
+    voxel_surface_area = 2 * (dist_x * dist_y + dist_x * dist_z + dist_y * dist_z)
+    return voxel_surface_area * total_voxels
+
 # Configure global plotting settings (e.g., optional SVG output).
 set_plot_save_svg(save_svg)
 
@@ -333,7 +344,8 @@ if run_inversion:
     # Print the report header once for the full run (stdout is redirected later).
     _print_header_once()
     # Validate required inversion parameters are present and non-empty.
-    missing_inversion = [name for name in INVERSION_PARAM_NAMES if _is_missing(globals().get(name))]
+    inversion_inputs = {name: getattr(cfg, name, None) for name in INVERSION_PARAM_NAMES}
+    missing_inversion = [name for name in INVERSION_PARAM_NAMES if _is_missing(inversion_inputs.get(name))]
     if missing_inversion:
         # Report missing parameters with context-specific messaging.
         _report_missing_params(missing_inversion, "inversion")
@@ -957,7 +969,22 @@ if run_h2_quantification:
     _print_header_once()
 
     # Validate required quantification parameters are present and non-empty.
-    missing_quant = [name for name in QUANT_PARAM_NAMES if _is_missing(globals().get(name))]
+    quant_inputs = {name: getattr(cfg, name, None) for name in QUANT_PARAM_NAMES}
+    quant_inputs.update(
+        {
+            "run_mc_convergence_sweep_flag": run_mc_convergence_sweep_flag,
+            "mc_convergence_sweep_config": mc_convergence_sweep_config,
+            "run_analyze_limiting_factors": run_analyze_limiting_factors,
+            "flow_target_log_min": flow_target_log_min,
+            "flow_target_log_max": flow_target_log_max,
+            "flow_target_n_samples": flow_target_n_samples,
+            "mc_flow_target_config": mc_flow_target_config,
+            "lithologies_dict": lithologies_dict,
+            "serpentinization_data": serpentinization_data,
+            "serp_corr_percentage": serp_corr_percentage,
+        }
+    )
+    missing_quant = [name for name in QUANT_PARAM_NAMES if _is_missing(quant_inputs.get(name))]
 
     if not run_montecarlo_fault:
         for name in ["fault_mc_n_iter", "flow_target_fracture_config"]:
@@ -1240,14 +1267,10 @@ if run_h2_quantification:
 
     temp_bins = TEMP_BINS
     run_prints = True
-    surface_area_per_km3 = globals().get("surface_area_per_km3", None)
+    surface_area_per_km3 = runtime_state.get("surface_area_per_km3")
     if surface_area_per_km3 is None:
-        original_volume_m3 = 1000 ** 3  # 1 km³
-        voxel_volume_m3 = dist_x * dist_y * dist_z
-        total_voxels = original_volume_m3 / voxel_volume_m3
-        voxel_surface_area = 2 * (dist_x * dist_y + dist_x * dist_z + dist_y * dist_z)
-        surface_area_per_km3 = voxel_surface_area * total_voxels
-        globals()["surface_area_per_km3"] = surface_area_per_km3
+        surface_area_per_km3 = _compute_surface_area_per_km3(dist_x, dist_y, dist_z)
+        runtime_state["surface_area_per_km3"] = surface_area_per_km3
 
     no_sat_params = build_no_saturation_workflow_params(cfg, locals())
     (   results_temp_volumetric, kg_rocks_dict, std_results_temp_volumetric, df_no_saturation,
@@ -1334,14 +1357,10 @@ if run_h2_quantification:
 
     # Ensure we pass a valid surface area per km³ (small fractures) to the no-sat MC.
     # If the global was not set (e.g., running univariate directly), recompute it here.
-    _surface_area_no_sat = globals().get("surface_area_per_km3", None)
+    _surface_area_no_sat = runtime_state.get("surface_area_per_km3")
     if _surface_area_no_sat is None:
-        original_volume_m3 = 1000 ** 3  # 1 km³
-        voxel_volume_m3 = dist_x * dist_y * dist_z
-        total_voxels = original_volume_m3 / voxel_volume_m3
-        voxel_surface_area = 2 * (dist_x * dist_y + dist_x * dist_z + dist_y * dist_z)
-        _surface_area_no_sat = voxel_surface_area * total_voxels
-        globals()["surface_area_per_km3"] = _surface_area_no_sat
+        _surface_area_no_sat = _compute_surface_area_per_km3(dist_x, dist_y, dist_z)
+        runtime_state["surface_area_per_km3"] = _surface_area_no_sat
 
     mc_no_sat_kwargs = build_mc_no_sat_kwargs(
         locals(),

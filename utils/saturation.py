@@ -88,8 +88,13 @@ def run_saturation_workflow(params: SaturationWorkflowParams):
 
     stats = stats_mc_saturation
     if run_prints:
+        monte_carlo_report_scope = {
+            "stats": stats,
+            "years": years,
+            "flow_target": flow_target,
+        }
         print_saturation_monte_carlo_report(
-            build_saturation_monte_carlo_report_params(locals())
+            build_saturation_monte_carlo_report_params(monte_carlo_report_scope)
         )
 
     total_tons_sat = 0.0
@@ -129,7 +134,14 @@ def run_saturation_workflow(params: SaturationWorkflowParams):
         production_rate_volumetric=production_rate_volumetric,
     )
 
-    print_saturation_summary(build_saturation_summary_params(locals()))
+    saturation_summary_scope = {
+        "total_kg_rocks": total_kg_rocks,
+        "years": years,
+        "total_tons_sat": total_tons_sat,
+        "std_total_mc": std_total_mc,
+        "mean_efficiency": mean_efficiency,
+    }
+    print_saturation_summary(build_saturation_summary_params(saturation_summary_scope))
 
     return stats_mc_saturation, total_tons_sat, std_total_mc, mean_efficiency
 
