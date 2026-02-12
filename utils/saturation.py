@@ -5,11 +5,18 @@ import random
 import sys
 from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, wait
 from contextlib import nullcontext
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
 
+from dataclasses import asdict, is_dataclass
+
+from utils.config import (
+    build_saturation_monte_carlo_report_params,
+    build_saturation_summary_params,
+    SaturationWorkflowParams,
+)
 from utils.general import compute_h2_solubility_kk_pr
 from utils.helpers import (
     _as_scalar_value,
@@ -26,34 +33,36 @@ from utils.reporting import print_saturation_monte_carlo_report, print_saturatio
 _MC_WORKER_CONTEXT: Optional[Dict[str, Any]] = None
 
 
-def run_saturation_workflow(
-    volume_at_temperature,
-    df_saturation_table,
-    mean_pressure_ranges,
-    serpentinization_degree,
-    int_fracture_spacing,
-    permeability_fractures,
-    flow_target,
-    production_rate_volumetric,
-    years,
-    dist_x,
-    dist_y,
-    dist_z,
-    kg_rocks_dict,
-    total_kg_rocks,
-    total_tons_no_sat,
-    results_path,
-    *,
-    mc_config,
-    n_cores,
-    seed,
-    porosity_front,
-    density_serpentinite,
-    run_prints=True,
-):
+def run_saturation_workflow(params: SaturationWorkflowParams):
     """Wrapper for the full with-saturation workflow (MC -> plots -> reports)."""
 
-    cfg = mc_config or {}
+    volume_at_temperature = params.volume_at_temperature
+    df_saturation_table = params.df_saturation_table
+    mean_pressure_ranges = params.mean_pressure_ranges
+    serpentinization_degree = params.serpentinization_degree
+    int_fracture_spacing = params.int_fracture_spacing
+    permeability_fractures = params.permeability_fractures
+    flow_target = params.flow_target
+    production_rate_volumetric = params.production_rate_volumetric
+    years = float(params.years)
+    years_int = int(round(years))
+    dist_x = params.dist_x
+    dist_y = params.dist_y
+    dist_z = params.dist_z
+    kg_rocks_dict = params.kg_rocks_dict
+    total_kg_rocks = params.total_kg_rocks
+    total_tons_no_sat = params.total_tons_no_sat
+    results_path = params.results_path
+    n_cores = params.n_cores
+    seed = params.seed
+    porosity_front = params.porosity_front
+    density_serpentinite = params.density_serpentinite
+    run_prints = params.run_prints
+
+    cfg = params.mc_config or {}
+    if is_dataclass(cfg) and not isinstance(cfg, type):
+        cfg = asdict(cfg)
+    cfg = cast(Dict[str, Any], cfg)
     stats_mc_saturation = run_saturation_monte_carlo(
         n_iter=cfg.get("n_iter", 0),
         volume_at_temperature=volume_at_temperature,
@@ -64,7 +73,7 @@ def run_saturation_workflow(
         permeability_fractures=permeability_fractures,
         flow_target=flow_target,
         production_rate_volumetric=production_rate_volumetric,
-        years=years,
+    years=years_int,
         dist_x=dist_x,
         dist_y=dist_y,
         dist_z=dist_z,
@@ -77,8 +86,11 @@ def run_saturation_workflow(
         density_serpentinite=density_serpentinite,
     )
 
+    stats = stats_mc_saturation
     if run_prints:
-        print_saturation_monte_carlo_report(stats_mc_saturation, years, flow_target)
+        print_saturation_monte_carlo_report(
+            build_saturation_monte_carlo_report_params(locals())
+        )
 
     total_tons_sat = 0.0
     std_total_mc = 0.0
@@ -111,19 +123,13 @@ def run_saturation_workflow(
     plot_h2_production_summary(
         df_plot,
         volume_at_temperature,
-        years=years,
+    years=years_int,
         results_path=results_path,
         stats=stats_mc_saturation,
         production_rate_volumetric=production_rate_volumetric,
     )
 
-    print_saturation_summary(
-        total_kg_rocks=total_kg_rocks,
-        years=years,
-        total_tons_sat=total_tons_sat,
-        std_total_mc=std_total_mc,
-        mean_efficiency=mean_efficiency,
-    )
+    print_saturation_summary(build_saturation_summary_params(locals()))
 
     return stats_mc_saturation, total_tons_sat, std_total_mc, mean_efficiency
 
@@ -244,27 +250,37 @@ def run_saturation_monte_carlo(
         else:
             factors_list = [None] * effective_n_iter
 
+    int_fracture_spacing_val = _as_scalar_value(int_fracture_spacing)
+    permeability_fractures_val = _as_scalar_value(permeability_fractures)
+    flow_target_val = _as_scalar_value(flow_target)
+    years_val = _as_scalar_value(years)
+    dist_x_val = _as_scalar_value(dist_x)
+    dist_y_val = _as_scalar_value(dist_y)
+    dist_z_val = _as_scalar_value(dist_z)
+    porosity_front_val = _as_scalar_value(porosity_front)
+    density_serpentinite_val = _as_scalar_value(density_serpentinite)
+
     worker_context = {
         "volume_at_temperature": volume_at_temperature,
         "df_saturation_table": df_saturation_table,
         "mean_pressure_ranges": mean_pressure_ranges,
         "serpentinization_degree": serpentinization_degree,
-        "int_fracture_spacing": int_fracture_spacing,
-        "permeability_fractures": permeability_fractures,
-        "flow_target": flow_target,
+        "int_fracture_spacing": int_fracture_spacing_val,
+        "permeability_fractures": permeability_fractures_val,
+        "flow_target": flow_target_val,
         "prod_vol_clean": prod_vol_clean,
-        "years": years,
-        "dist_x": dist_x,
-        "dist_y": dist_y,
-        "dist_z": dist_z,
+        "years": years_val,
+        "dist_x": dist_x_val,
+        "dist_y": dist_y_val,
+        "dist_z": dist_z_val,
         "kg_rocks_dict": kg_rocks_dict,
         "disable_scale_factor_ws": disable_scale_factor_ws,
         "dt_day": dt_day,
         "use_equilibrium": use_equilibrium,
         "track_timeseries": track_timeseries,
         "config": config_mc,
-        "porosity_front": porosity_front,
-        "density_serpentinite": density_serpentinite,
+        "porosity_front": porosity_front_val,
+        "density_serpentinite": density_serpentinite_val,
     }
 
     payloads = [(i, seeds[i], factors_list[i]) for i in range(effective_n_iter)]

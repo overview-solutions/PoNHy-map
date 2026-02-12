@@ -9,6 +9,7 @@ from contextlib import nullcontext
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
+import yaml
 from tqdm import tqdm
 
 _HEADER_PRINTED = False
@@ -29,8 +30,8 @@ def _normalize_unit_parameters(
     if len(lengths) != 1:
         raise ValueError(
             "Unit parameter lists must have the same length. "
-            "Check UNIT_DENS_ADJ_LIST, UNIT_MAGSUS_LIST, UNIT_DENS_DISP_LIST, "
-            "UNIT_MAGSUS_DISP_LIST, VOL_UNIT_LIST."
+            "Check unit_dens_adj_list, unit_magsus_list, unit_dens_disp_list, "
+            "unit_magsus_disp_list, vol_unit_list."
         )
 
     n_units = len(dens_adj)
@@ -46,9 +47,9 @@ def _normalize_unit_parameters(
 
     weight_sum = float(np.sum(weights_arr)) if weights_arr.size else 0.0
     if not np.isfinite(weight_sum) or weight_sum <= 0:
-        raise ValueError("VOL_UNIT_LIST must contain positive values that sum to 1.")
+        raise ValueError("vol_unit_list must contain positive values that sum to 1.")
     if not np.isclose(weight_sum, 1.0):
-        warnings.warn("VOL_UNIT_LIST does not sum to 1. Normalizing weights.")
+        warnings.warn("vol_unit_list does not sum to 1. Normalizing weights.")
         weights_arr = weights_arr / weight_sum
 
     return (
@@ -205,11 +206,11 @@ def _scale_samples_to_ranges(unit: np.ndarray, range_specs: Sequence[Tuple[str, 
 
 
 def _coerce_config_value(key: str, value: Any) -> Any:
-    if key == "KAPPA":
+    if key == "kappa":
         return np.array(value)
-    if key == "CHI0_RATIO":
+    if key == "chi0_ratio":
         return np.array(value)
-    if key == "N_CORES" and (value == 0 or value == "auto"):
+    if key == "n_cores" and (value == 0 or value == "auto"):
         return None
     if key in {"serpentinization_data", "serp_corr_percentage"} and isinstance(value, dict):
         return {k: np.array(v) for k, v in value.items()}
@@ -228,7 +229,7 @@ def _apply_text_config(
     for key, value in config.items():
         globals_dict[key] = _coerce_config_value(key, value)
     globals_dict["DEFAULT_SAMPLING_SEED"] = (
-        globals_dict["SEED"] if globals_dict.get("USE_GLOBAL_SEED") else None
+        globals_dict["seed"] if globals_dict.get("use_global_seed") else None
     )
 
 
@@ -293,6 +294,23 @@ def _load_text_config(path: str, top_level_keys: Optional[Sequence[str]] = None)
                 target[key] = parsed_value
     except Exception as exc:
         print(f"ERROR: Failed to read config file '{path}': {exc}")
+        sys.exit(1)
+    return data
+
+
+def _load_yaml_config(path: str, top_level_keys: Optional[Sequence[str]] = None) -> Optional[Dict[str, Any]]:
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle)
+    except Exception as exc:
+        print(f"ERROR: Failed to read config file '{path}': {exc}")
+        sys.exit(1)
+    if data is None:
+        return None
+    if not isinstance(data, dict):
+        print(f"ERROR: Config file '{path}' must define a top-level mapping.")
         sys.exit(1)
     return data
 

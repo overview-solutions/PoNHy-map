@@ -4,11 +4,18 @@ import csv
 import os
 import sys
 from contextlib import nullcontext
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple, cast
 
 import numpy as np
 import pandas as pd
 
+from dataclasses import asdict, is_dataclass
+
+from utils.config import (
+    build_no_saturation_summary_report_params,
+    NoSaturationWorkflowParams,
+    ThermoLookupParams,
+)
 from utils.general import (
     build_thermo_lookup_by_range,
     compute_h2_solubility_kk_pr,
@@ -27,33 +34,35 @@ from utils.reporting import print_no_saturation_report, print_no_saturation_summ
 _NO_SAT_WORKER_CONTEXT: Optional[Dict[str, Any]] = None
 
 
-def run_no_saturation_workflow(
-    temperature_ranges,
-    serpentinization_corrections,
-    serpentinization_front_velocities,
-    density_serpentinite,
-    production_rate_volumetric,
-    waterrockratio,
-    volume_at_temperature,
-    mean_pressure_ranges,
-    thermo_data,
-    lithology_code,
-    porosity_front,
-    results_path,
-    years,
-    dist_x,
-    dist_y,
-    dist_z,
-    *,
-    mc_config,
-    temp_bins,
-    molar_mass_h2,
-    molar_mass_h2o,
-    thermo_lookup=None,
-    surface_area_per_km3=None,
-    run_prints=True,
-):
+def run_no_saturation_workflow(params: NoSaturationWorkflowParams):
     """End-to-end helper for the no-saturation pathway."""
+
+    temperature_ranges = params.temperature_ranges
+    serpentinization_corrections = params.serpentinization_corrections
+    serpentinization_front_velocities = params.serpentinization_front_velocities
+    density_serpentinite = params.density_serpentinite
+    production_rate_volumetric = params.production_rate_volumetric
+    waterrockratio = params.waterrockratio
+    volume_at_temperature = params.volume_at_temperature
+    mean_pressure_ranges = params.mean_pressure_ranges
+    thermo_data = params.thermo_data
+    lithology_code = params.lithology_code
+    porosity_front = params.porosity_front
+    results_path = params.results_path
+    years = params.years
+    dist_x = params.dist_x
+    dist_y = params.dist_y
+    dist_z = params.dist_z
+    temp_bins = params.temp_bins
+    molar_mass_h2 = params.molar_mass_h2
+    molar_mass_h2o = params.molar_mass_h2o
+    thermo_lookup = params.thermo_lookup
+    surface_area_per_km3 = params.surface_area_per_km3
+    run_prints = params.run_prints
+    mc_config = params.mc_config or {}
+    if is_dataclass(mc_config) and not isinstance(mc_config, type):
+        mc_config = asdict(mc_config)
+    mc_config = cast(Dict[str, Any], mc_config)
 
     if surface_area_per_km3 is None:
         original_volume_m3 = 1000**3
@@ -118,13 +127,7 @@ def run_no_saturation_workflow(
 
     if run_prints:
         print_no_saturation_report(df_no_saturation)
-        print_no_saturation_summary_report(
-            df_no_saturation=df_no_saturation,
-            total_tons_no_sat=total_tons_no_sat,
-            total_kg_rocks=total_kg_rocks,
-            years=years,
-            no_sat_csv_path=no_sat_csv_path,
-        )
+        print_no_saturation_summary_report(build_no_saturation_summary_report_params(locals()))
 
     return (
         results_temp_volumetric,
@@ -414,11 +417,13 @@ def compute_saturation_from_volumetric(
 
     if thermo_lookup is None:
         thermo_lookup = build_thermo_lookup_by_range(
-            thermo_data,
-            lithology_code,
-            waterrockratio,
-            temperature_ranges,
-            mean_pressure_ranges,
+            ThermoLookupParams(
+                thermo_data=thermo_data,
+                lithology_code=lithology_code,
+                waterrockratio=waterrockratio,
+                temperature_ranges=temperature_ranges,
+                mean_pressure_ranges=mean_pressure_ranges,
+            )
         )
 
     results = []

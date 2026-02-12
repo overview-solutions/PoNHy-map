@@ -1,0 +1,267 @@
+# ======================================================================================================
+# PoNHy - Potential for Natural Hydrogen
+# Developed by: Rodolfo Christiansen (LIAG)
+# Contact: rodo_christiansen@hotmail.com - Rodolfo.Christiansen@liag-institut.de
+# ======================================================================================================
+
+# PoNHy YAML configuration file
+# All values are preloaded. Edit any value and PoNHy.py will use it.
+# Notes:
+# - Strings may be quoted. Quotes are recommended for paths and text.
+# - Arrays use [ ... ].
+# - For N_CORES, use 0 or "auto" to auto-detect CPU count.
+
+# ================================ Run flags ================================
+RUN_INVERSION: false  # Set True to run the inversion routine.
+RUN_H2_QUANTIFICATION: true  # Set True to run the H2 quantification routine.
+
+# ================================ Paths (IQ) ================================
+BASE_DIR: "/home/christiansen/Projects/Python_Git/PoNHy"  # Change this to your base directory [IQ]
+
+# Shared data paths (used by both routines)
+TOPO_FILE: "/Data/Ext_Topo.txt"  # Path to topography file [IQ]
+
+# Inversion-only paths (used when RUN_INVERSION=True)
+GRAV_FILE: "/Data/Ext_Grav.txt"  # Path to gravity data file [I]
+MAG_FILE: "/Data/Ext_Mag_down.txt"  # Path to magnetic data file [I]
+INITIAL_MODEL: "/Data/Updated_Geology_Pyrenees.csv"  # Path to initial model file [I]
+
+# Initial model. If not set it to: USE_INITIAL_MODEL = False
+USE_INITIAL_MODEL: true  # [I]
+
+# Define density contrast values for each unit in g/cc and SI.
+BACKGROUND_DENS: -1e-4  # Used when USE_INITIAL_MODEL = False [I]
+BACKGROUND_SUSC: 1e-4  # Used when USE_INITIAL_MODEL = False [I]
+
+# H2 quantification paths (used when RUN_H2_QUANTIFICATION=True)
+DB_DIR: "/Data/DB0"  # Path to H2 database directory [Q]
+TEMPERATURE_FILE: "/Data/Temperature_model_new.csv"  # Path to temperature file [Q]
+DENSITY_FILE: "/Data/Density_Serpentinite.csv"  # Path to density of serpentinites file [Q]
+MAGSUS_FILE: "/Data/Magsus_Serpentinite.csv"  # Path to magnetic susceptibility of serpentinites file [Q]
+
+SAVE_SVG: false  # Save SVG copies of plots alongside PNG outputs [IQ]
+
+# ================================ Mesh parameters (IQ) ================================
+# Mesh parameters.
+DX: 750  # Units of m [IQ]
+DY: 750  # Units of m [IQ]
+DZ: 500  # Units of m [IQ]
+DEPTH_CORE: 20000  # Units of m [IQ]
+
+# There are two expanding methods one can use: rectangular or square.
+EXPANSION_PERCENTAGE: 10  # e.g. The grid was expanded by 10% [I]
+EXPANSION_TYPE: "rectangular"  # "rectangular" or "square" [I]
+
+# If expansion was square, dominant side of the original grid, if not ignore
+DOMINANT_SIDE: "x"  # or "y", as appropriate [I]
+# Ignore the other side
+ORIGINAL_Y: 0  # Units of m [I]
+ORIGINAL_X: 0  # Units of m [I]
+
+# ================================ Geophysical parameters (I) ================================
+# Uncertainties in gravity and mag data in % of the maximum anomaly
+UNCER_GRAV: 2.0  # Units of % [I]
+UNCER_MAG: 2.0  # Units of % [I]
+
+# Define the inducing field H0 = (intensity [nT], inclination [deg], declination [deg])
+INCLINATION: 90  # Units of deg [I]
+DECLINATION: 0  # Units of deg [I]
+STRENGTH: 45000  # Units of nT # IGRF calculator year 2014 [I]
+
+# ================================ Petrophysical parameters (I) ================================
+# Petrophysical parameters (define all units using lists)
+UNIT_LABELS: ["Crust", "Serpentinite", "Mantle"]
+UNIT_DENS_ADJ_LIST: [2.60, 2.85, 3.05]  # Units of g/cm³ [I]
+UNIT_MAGSUS_LIST: [0.001, 0.030, 0.0001]  # Units of SI [I]
+
+# Standar deviation of the petrophysical parameters (for the covariance matrix)
+UNIT_DENS_DISP_LIST: [0.07, 0.04, 0.04]  # Units of g/cm³ [I]
+UNIT_MAGSUS_DISP_LIST: [0.003, 0.005, 0.003]  # Units of SI [I]
+
+# Define the approximate volumes of the units (must sum 1)
+VOL_UNIT_LIST: [0.70, 0.10, 0.20]
+
+# Label used to identify serpentinite cells in the quasi-geology model
+SERPENTINITE_LABEL: 2  # Default PGI cluster index for Unit 2 (Serpentinite) [I]
+
+# Define the approximate density and susceptibility ranges for the inversion
+LOW_DENS_ADJ: 2.2  # Units of g/cm³ [I]
+UP_DENS_ADJ: 3.5  # Units of g/cm³ [I]
+LOWER_SUSCEPTIBILITY: 0  # Units of SI [I]
+UPPER_SUSCEPTIBILITY: 0.1  # Units of SI [I]
+
+# ================================ Inversion parameters (I) ================================
+# Define the parameters for the inversion
+MAX_ITER: 25  # Max non-linear (outer) iterations [I]
+MAX_ITER_LS: 20  # Max line-search iterations per outer iteration [I]
+MAX_ITER_CG: 100  # Max conjugate-gradient iterations per outer iteration [I]
+TOL_CG: 1e-4  # CG tolerance (stopping criterion) [I]
+
+SAVE_PRED_RESIDUAL_NPY: false  # Save predicted/residual arrays as .npy files [I]
+
+# Regularization: alpha_x/y/z/(xx/yy/zz) -> smoothness; alpha_pgi -> PGI (petrophysical clustering).
+ALPHA_PGI: 1.0  # [I]
+ALPHA_X: 1.0  # [I]
+ALPHA_Y: 1.0  # [I]
+ALPHA_Z: 1.0  # [I]
+ALPHA_XX: 0.0  # [I]
+ALPHA_YY: 0.0  # [I]
+ALPHA_ZZ: 0.0  # [I]
+
+# AlphasSmoothEstimate_ByEig: alpha0_ratio scales smoothness alphas vs smallness (eig-based).
+ALPHA0_RATIO_DENS: 5e-3  # [I]
+ALPHA0_RATIO_SUSC: 5e-1  # [I]
+
+# BetaEstimate_ByEig: beta0_ratio scales beta_0 (bigger -> more regularization; smaller -> more data fit).
+BETA0_RATIO: 1e-3  # [I]
+
+# PGI_BetaAlphaSchedule: beta /= coolingFactor; tolerance/progress control cooling decisions vs targets.
+COOLING_FACTOR: 1.25  # [I]
+TOLERANCE: 0.5  # [I]
+PROGRESS: 1.0  # [I]
+
+# MultiTargetMisfits: chiSmall scales the target petrophysical/smallness misfit (not geophysical).
+USE_CHI_SMALL: false  # When True, apply CHI_SMALL in MultiTargetMisfits [I]
+CHI_SMALL: 1.0  # [I]
+
+# add learned mref in smooth once stable
+WAIT_TILL_STABLE: true  # [I]
+
+# Update the parameters in smallness (L2-approx of PGI)
+UPDATE_GMM: false  # if True, update the GMM (MAP estimate) during the inversion [I]
+KAPPA: [[1e10, 1e10, 0], [1e10, 1e10, 0]]  # From KAPPA matrix in code.
+
+# ScalingMultipleDataMisfits_ByEig: chi0_ratio sets initial relative misfit weights (then eig-balance + normalize).
+CHI0_RATIO: [5e-4, 1e2]  # [I]
+
+# ================================ Seeds for reproducibility (Q) ================================
+# If you want fully random runs (non-reproducible), set USE_GLOBAL_SEED=False
+SEED: 12345  # [Q]
+USE_GLOBAL_SEED: true  # [Q]
+
+# ================================ Field and lab parameters (Q) ================================
+# Distance between fractures in meters (size of the serpentinite blocks)
+DIST_X: 1  # Units of m. [Q]
+DIST_Y: 1  # Units of m. [Q]
+DIST_Z: 1  # Units of m. [Q]
+
+# Parameters for serpentinite
+DENSITY_SERPENTINITE: 2910  # Density in kg/m³ (can be obtained from the inversion code) [Q]
+POROSITY_FRONT: 8  # Units of %. Porosity of the serpentinites at the serpentinization front (e.g., Chogani and Plümper, 2023) [Q]
+INT_FRACTURE_SPACING: 0.05  # m Internal fracture spacing  (within each serpentinite block to allow fluid flow) [Q]
+PERMEABILITY_FRACTURES: 1e-20  # m² Permeability of the internal fractures [Q]
+WATERROCKRATIO: 0.16  # No units. W/R values: [0.0, 0.02, 0.04, 0.06, 0.08, 0.1,  0.12, 0.14, 0.16, 0.18, 0.2] [Q]
+FLOW_TARGET: 5e5  # [L/day] volumetric flow we want to deliver to mantle rocks (the saturation case will be calculated using this value) [Q]
+
+# Other parameters
+DENSITY_LITHO: 2700  # kg/m³ (for lithostatic pressure) [Q]
+GRAVITY: 9.81  # m/s² [Q]
+LITHOLOGY_CODE: "LH1"  # Harzburgite HZ1, Lherzolite LH1 [Q]
+YEARS: 1  # duration of simulation in years (present time and conditions) [Q]
+MOLAR_MASS_H2: 0.00201588  # kg/mol [Q]
+MOLAR_MASS_H2O: 0.01801528  # kg/mol [Q]
+
+# ================================ Serpentinization front velocities (Q) ================================
+# Serpentinization front velocities (cm/day). You must provide one reference point with T
+V_REF_SYNTHETIC: 1.272e-5  # cm/day. Reference velocity values from Malvoisin & Brunet (2014) [Q]
+T_REF_RANGE: "300_325"  # Temperature range in °C for the reference velocity from Malvoisin & Brunet (2014) [Q]
+
+# ================================ Parallel processing (Q) ================================
+# Number of cores to use in parallel processing. When left as None the helper will fall back to the available CPUs.
+N_CORES: 0  # [Q] (0 or "auto" -> use all cores)
+
+# ================================ Water flow simulation in faults (Q) ================================
+# Geometry/hydraulics to estimate if the target flow can be reached.
+RUN_MONTECARLO_FAULT: true  # Run the Monte Carlo flow simulation [Q]
+FAULT_MC_N_ITER: 5000  # number of Monte Carlo realizations (iterations) for the fault-flow simulation [Q]
+
+FLOW_TARGET_FRACTURE_CONFIG:
+  L_fault: 50000  # [m] along-strike length of the fault segment considered
+  width_min: 100  # [m] minimum width of the fault zone
+  width_max: 1500  # [m] maximum width of the fault zone
+  fractured_length_min: 0.10  # [-] min fraction of the total fault length that is fractured/active
+  fractured_length_max: 0.70  # [-] max fraction of the total fault length that is fractured/active
+  D_min: 1000  # [m] minimum sampled depth / flow-path length (depth)
+  D_max: 12000  # [m] maximum sampled depth / flow-path length (depth)
+  fracture_density_min: 0.01  # [fractures/m] min density
+  fracture_density_max: 0.2  # [fractures/m] max density
+  deltaP_min: 60  # [MPa] minimum pressure
+  deltaP_max: 100  # [MPa] maximum pressure
+  mu_min: 1e-3  # [Pa s] minimum viscosity
+  mu_max: 1e-5  # [Pa s] maximum viscosity
+  connection_fraction_min: 0.25  # [-] min hydraulically connected fraction
+  connection_fraction_max: 0.50  # [-] max hydraulically connected fraction
+
+# ================================ No saturation (Q) ================================
+# Controls on the computation of H2 production with no solubility or saturation limits (purely theoretical output).
+MC_NO_SATURATION_CONFIG:
+  n_iter: 500 # Number of Monte Carlo iterations
+  verbose: true  # Show detailed results
+  sampling: "sobol"  # Sampling mode: "uniform", "lhs", or "sobol"
+  sampling_seed: 12345  # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility (None for random)
+  v_ref_range: [0.4, 1.6]  # Range factor for serpentinization front velocity
+  prod_rate_range: [0.5, 1.5]  # Range factor for production rate
+  volume_range: [0.8, 1.2]  # Range factor for serpentinite volume per temp range
+  serp_correction_range: [0.8, 1.2]  # Range factor for serpentinization correction
+  surface_area_range: [0.6, 1.4]  # Range factor for fracture surface area per km³
+  show_progress: true  # When True, display a tqdm bar during the volumetric Monte Carlo
+
+# ================================ Saturation (Q) ================================
+# Physical and geochemical uncertainties for the calculation with saturation limits
+MC_SATURATION_CONFIG:
+  n_iter: 500  # Number of Monte Carlo iterations
+  sampling: "sobol"  # Sampling: 'lhs' or 'sobol' (quasi-random) for lower variance
+  sampling_seed: 12345  # DEFAULT_SAMPLING_SEED or none. Seed for reproducibility (LHS/Sobol)
+  dt_day: 1  # Time step for the within-day integration loop [day] (not yet implemented correctly)
+  max_chunk_size: 200  # Maximum number of iterations submitted per executor batch (smaller ⇒ faster feedback)
+  vol_range: [0.8, 1.2]  # Factor for total volume per temperature range
+  mean_press_range: [0.7, 1.3]  # Factor for mean pressure per range
+  serp_deg_range: [0.8, 1.2]  # Factor for serpentinization degree
+  spacing_range: [0.5, 1.5]  # Factor for internal fracture spacing
+  perm_range: [0.8, 1.2]  # Factor for fracture permeability
+  prod_rate_range: [0.8, 1.2]  # Factor for volumetric H₂ production
+  d_range: [0.5, 1.5]  # Unified factor for dist_x, dist_y, dist_z
+  kg_rocks_range: [0.4, 1.6]  # Factor for reactive rock mass per range
+  solubility_scaling_range: [0.7, 1.3]  # Factor for H₂ solubility
+
+# ================================ Univariate sensitivity analysis (Q) ================================
+# Univariate sensitivity analysis for parameters (all other factors fixed at 1.0).
+RUN_UNIVARIATE_ANALYSIS_NO_SAT: true  # enable univariate sweep for the no-saturation MC [Q]
+RUN_UNIVARIATE_ANALYSIS_SAT: true  # enable univariate sweep for the saturation MC [Q]
+
+UNIVARIATE_ANALYSIS_CONFIG:
+  n_points: 50  # number of factor values between (min,max)
+  n_rep: 10  # replicates per point
+  baseline_n_iter: 5000  # iterations for the baseline run (all factors = 1.0)
+  sampling: "sobol"  # Sampling: 'lhs' or 'sobol' (quasi-random) for lower variance
+  sampling_seed: 12345  # reproducible seed for the sweep (None when USE_GLOBAL_SEED=False)
+  show_progress: true  # show per-parameter progress bar
+  quiet: true  # suppress univariate console summary (keep progress bars)
+  make_plot: true  # Save parameter-vs-H2 curve plots for the sweep (PNG/SVG)
+  worker_count: 0  # Use >1 to parallelize the inner MC per factor value; default to all available cores
+
+# ================================ Convergence sweeps (Q) ================================
+# Convergence sweep for saturation analysis (How many iterations are needed for convergence?).
+RUN_MC_CONVERGENCE_SWEEP: false
+
+MC_CONVERGENCE_SWEEP_CONFIG:
+  iter_values: [10, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000]  # Monte Carlo iterations to evaluate
+  reuse_from_single_run: false  # If True, reuse a single large run instead of running per n_iter
+  result_column: "H2 total [tons]"  # Column used to evaluate convergence
+  tolerance_mean_pct: 10.0  # Allowed change (%) in mean when doubling n_iter
+  tolerance_std_pct: 5.0  # Allowed change (%) in std when doubling n_iter
+  save_plot: true  # Save convergence plot alongside CSV (when run)
+  silence_runs: true  # Suppress textual output during sweep runs (keep progress bar)
+
+# ================================ Flow targets ================================
+# Used to run tests across flow-target values to evaluate outputs and which factors are limiting.
+RUN_ANALYZE_LIMITING_FACTORS: true  # Boolean to control whether analyze_limiting_factors_by_flow_target is executed
+FLOW_TARGET_LOG_MIN: 1e1  # [L/day] minimum
+FLOW_TARGET_LOG_MAX: 1e10  # [L/day] maximum
+FLOW_TARGET_N_SAMPLES: 30  # [-] number of flow targets (the x axis is divided in this number)
+
+MC_FLOW_TARGET_CONFIG:
+  n_iter: 50  # Number of Monte Carlo iterations per flow target
+  verbose: false  # Show detailed results
+  show_progress: false  # Show progress bar for each target
+  save_timeseries_plots: false  # Save debug plots for timeseries totals per flow

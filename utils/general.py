@@ -11,6 +11,13 @@ import xarray as xr
 from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
 
+from utils.config import (
+    MeanLithostaticPressureParams,
+    ProductionRateVolumetricParams,
+    SerpentinizationFrontVelocityParams,
+    ThermoLookupParams,
+)
+
 
 def load_h2_production_database(dsn_db, rock_codes=None, ftype="zarr"):
     """Load hydrogen production databases from Zarr into xarray objects."""
@@ -197,32 +204,28 @@ def save_saturation_csv(stats_mc_saturation, mean_pressure_ranges, results_path)
     return sat_csv_path
 
 
-def build_production_rate_volumetric_dict(
-    thermo_data,
-    lithology_code,
-    waterrockratio,
-    temperature_ranges,
-    mean_pressure_ranges,
-    thermo_lookup=None,
-):
+def build_production_rate_volumetric_dict(params: ProductionRateVolumetricParams):
     """Build average H₂ production per temperature range for a lithology and W/R ratio."""
+    thermo_lookup = params.thermo_lookup
     if thermo_lookup is None:
         thermo_lookup = build_thermo_lookup_by_range(
-            thermo_data,
-            lithology_code,
-            waterrockratio,
-            temperature_ranges,
-            mean_pressure_ranges,
+            ThermoLookupParams(
+                thermo_data=params.thermo_data,
+                lithology_code=params.lithology_code,
+                waterrockratio=params.waterrockratio,
+                temperature_ranges=params.temperature_ranges,
+                mean_pressure_ranges=params.mean_pressure_ranges,
+            )
         )
     rates = []
-    for tr in temperature_ranges:
+    for tr in params.temperature_ranges:
         stats = thermo_lookup.get(tr) if thermo_lookup else None
         if stats is None:
             mol_kg_h2 = 0.0
         else:
             mol_kg_h2 = stats["mol_kg_h2"]
         rates.append((tr, mol_kg_h2))
-    return {f"w/r:{waterrockratio}": rates}
+    return {f"w/r:{params.waterrockratio}": rates}
 
 
 def weighted_average_rates(closest, waterrockratio, production_rate_volumetric, temp_bins):
@@ -257,28 +260,21 @@ def weighted_average_rates(closest, waterrockratio, production_rate_volumetric, 
     return averaged_rates
 
 
-def compute_mean_lithostatic_pressure_by_range(
-    temperature_mesh,
-    xyz_mesh_temperature,
-    temperature_ranges,
-    *,
-    density_litho,
-    gravity,
-):
+def compute_mean_lithostatic_pressure_by_range(params: MeanLithostaticPressureParams):
     """Calculate mean lithostatic pressure for each temperature range."""
-    surface_level = np.max(xyz_mesh_temperature[:, 2])
-    relative_depths = surface_level - xyz_mesh_temperature[:, 2]
+    surface_level = np.max(params.xyz_mesh_temperature[:, 2])
+    relative_depths = surface_level - params.xyz_mesh_temperature[:, 2]
 
     mean_pressure_ranges = {}
     mean_depths = {}
-    for temp_range in temperature_ranges.keys():
+    for temp_range in params.temperature_ranges.keys():
         lo, hi = map(float, temp_range.split("_"))
-        idx = np.where((temperature_mesh >= lo) & (temperature_mesh < hi))[0]
+        idx = np.where((params.temperature_mesh >= lo) & (params.temperature_mesh < hi))[0]
 
         if idx.size > 0:
             mean_depth = np.mean(relative_depths[idx])
-            pressure_litho = density_litho * gravity * mean_depth
-            pressure_hydro = 1000 * gravity * mean_depth
+            pressure_litho = params.density_litho * params.gravity * mean_depth
+            pressure_hydro = 1000 * params.gravity * mean_depth
 
             if mean_depth <= 3000:
                 mean_pressure_pa = pressure_hydro
@@ -309,8 +305,8 @@ def compute_mean_lithostatic_pressure_by_range(
     pressures = [mean_pressure_ranges[k] for k in sorted_keys]
     depths = [mean_depths[k] for k in sorted_keys]
     depths_arr = np.array(depths)
-    litho = (density_litho * gravity * depths_arr) / 1e5
-    hydro = (1000 * gravity * depths_arr) / 1e5
+    litho = (params.density_litho * params.gravity * depths_arr) / 1e5
+    hydro = (1000 * params.gravity * depths_arr) / 1e5
 
     plt.figure(figsize=(6, 5))
     plt.plot(pressures, depths, marker="o", markersize=4, label="Estimated Pressure", color="blue")
@@ -328,12 +324,14 @@ def compute_mean_lithostatic_pressure_by_range(
     return mean_pressure_ranges, mean_depths
 
 
-def build_thermo_lookup_by_range(thermo_data, lithology_code, waterrockratio, temperature_ranges, mean_pressure_ranges):
+def build_thermo_lookup_by_range(params: ThermoLookupParams):
     """Precompute thermo-data averages per temperature range to avoid repeated xarray selections."""
-    da = thermo_data[lithology_code]
+    da = params.thermo_data[params.lithology_code]
     temps = da.coords["temperature"].values
-    slice_wr = da.sel(w2r=waterrockratio, method="nearest")
-    rho_wr = thermo_data[lithology_code].sel(fields="rho_H2O").sel(w2r=waterrockratio, method="nearest")
+    slice_wr = da.sel(w2r=params.waterrockratio, method="nearest")
+    rho_wr = params.thermo_data[params.lithology_code].sel(fields="rho_H2O").sel(
+        w2r=params.waterrockratio, method="nearest"
+    )
     lookup = {}
     field_map = {
         "mol_kg_H2": "mol_kg_h2",
@@ -343,10 +341,10 @@ def build_thermo_lookup_by_range(thermo_data, lithology_code, waterrockratio, te
     }
     fields_to_average = tuple(field_map.keys())
 
-    for t_range in temperature_ranges:
+    for t_range in params.temperature_ranges:
         lo, hi = map(float, t_range.split("_"))
         temp_mask = (temps >= lo) & (temps < hi)
-        p_bar = mean_pressure_ranges.get(t_range, float("nan"))
+        p_bar = params.mean_pressure_ranges.get(t_range, float("nan"))
         if not temp_mask.any() or np.isnan(p_bar):
             lookup[t_range] = None
             continue
@@ -518,14 +516,14 @@ def plot_serpentinization_heatmap(
     return file_name_png, file_name_svg
 
 
-def compute_serpentinization_front_velocities(production_rate_volumetric, waterrockratio, t_ref_range, v_ref_synthetic):
+def compute_serpentinization_front_velocities(params: SerpentinizationFrontVelocityParams):
     """Estimate serpentinization front velocities from volumetric production rates."""
     print("\n" + " Estimated front velocities ".center(150, "-") + "\n")
-    wr_key = f"w/r:{waterrockratio}"
-    rates_list = production_rate_volumetric[wr_key]
+    wr_key = f"w/r:{params.waterrockratio}"
+    rates_list = params.production_rate_volumetric[wr_key]
     rates_dict = {tr: rate for tr, rate in rates_list}
 
-    t_ref_mid = sum(map(int, t_ref_range.split("_"))) / 2
+    t_ref_mid = sum(map(int, params.t_ref_range.split("_"))) / 2
 
     valid_bins = [
         (tr, sum(map(int, tr.split("_"))) / 2, rate) for tr, rate in rates_dict.items() if rate > 0
@@ -536,8 +534,10 @@ def compute_serpentinization_front_velocities(production_rate_volumetric, waterr
 
     tr_ref, t_mid_ref, r_ref_model = min(valid_bins, key=lambda x: abs(x[1] - t_ref_mid))
 
-    if tr_ref != t_ref_range:
-        print(f"Reference bin '{t_ref_range}' has zero rate. Using closest valid: '{tr_ref}' ({t_mid_ref:.1f} °C)")
+    if tr_ref != params.t_ref_range:
+        print(
+            f"Reference bin '{params.t_ref_range}' has zero rate. Using closest valid: '{tr_ref}' ({t_mid_ref:.1f} °C)"
+        )
     else:
         print(f"Using reference bin: '{tr_ref}' ({t_mid_ref:.1f} °C)")
 
@@ -548,7 +548,7 @@ def compute_serpentinization_front_velocities(production_rate_volumetric, waterr
     print("\n{:^20} {:^20}".format("Temp Range [°C]", "Serp Vel [cm/day]"))
     print("{:^50}".format("-" * 50))
     for tr, rate in sorted(rates_dict.items()):
-        v_avg = compute_velocity(rate, r_ref_model, v_ref_synthetic)
+        v_avg = compute_velocity(rate, r_ref_model, params.v_ref_synthetic)
         serpentinization_front_velocities[tr] = [("avg", v_avg)]
         print(f"{tr:^20} {v_avg:>20.2e}")
     return serpentinization_front_velocities

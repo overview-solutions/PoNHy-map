@@ -22,6 +22,7 @@ from utils.no_saturation import (
 )
 from utils.plotting import _save_plot_pair, get_plot_save_svg
 from utils.reporting import save_mc_convergence_sweep_report
+from utils.config import FlowTargetLimitingFactorsParams
 from utils.saturation import run_saturation_monte_carlo
 
 
@@ -1135,39 +1136,15 @@ def run_saturation_univariate_sweep(
 # ======================================================== Limiting factors ==========================================================
 
 def analyze_limiting_factors_by_flow_target(
-    FLOW_TARGET_FRACTURE_CONFIG: Dict[str, Any],
-    volume_at_temperature: Dict[str, float],
-    df_saturation_table: pd.DataFrame,
-    mean_pressure_ranges: Dict[str, float],
-    serpentinization_degree: float,
-    int_fracture_spacing: float,
-    permeability_fractures: float,
-    production_rate_volumetric: Dict[str, Any],
-    years: float,
-    dist_x: float,
-    dist_y: float,
-    dist_z: float,
-    kg_rocks_dict: Optional[Dict[str, float]],
-    *,
-    flow_target_log_min: float,
-    flow_target_log_max: float,
-    flow_target_n_samples: int,
-    mc_flow_target_config: Dict[str, Any],
-    mc_saturation_config: Dict[str, Any],
-    porosity_front: float,
-    density_serpentinite: float,
-    results_path: Optional[str] = None,
-    total_tons_no_sat: float = 0.0,
-    n_cores: Optional[int] = None,
-    seed: Optional[int] = None,
+    params: FlowTargetLimitingFactorsParams,
 ) -> Optional[pd.DataFrame]:
     """Sweep flow targets and record Monte Carlo H₂ totals plus limiting factors."""
 
-    _ = FLOW_TARGET_FRACTURE_CONFIG
+    _ = params.flow_target_fracture_config
     try:
-        flow_target_log_min = float(flow_target_log_min)
-        flow_target_log_max = float(flow_target_log_max)
-        flow_target_n_samples = int(flow_target_n_samples)
+        flow_target_log_min = float(params.flow_target_log_min)
+        flow_target_log_max = float(params.flow_target_log_max)
+        flow_target_n_samples = int(params.flow_target_n_samples)
     except Exception:
         return None
 
@@ -1188,21 +1165,23 @@ def analyze_limiting_factors_by_flow_target(
         if total_flows > 0
         else nullcontext()
     )
-    config = mc_flow_target_config
+    config = params.mc_flow_target_config
     mc_iterations = int(config.get("n_iter", 50))
     verbose = bool(config.get("verbose", False))
     show_progress = bool(config.get("show_progress", False))
     track_timeseries = bool(config.get("save_timeseries_plots", False))
 
     total_pore_volume_m3 = float("nan")
-    porosity_used = porosity_front if porosity_front <= 1 else porosity_front / 100.0
-    if kg_rocks_dict:
+    porosity_used = params.porosity_front if params.porosity_front <= 1 else params.porosity_front / 100.0
+    if params.kg_rocks_dict:
         try:
-            total_pore_volume_m3 = sum((val / density_serpentinite) * porosity_used for val in kg_rocks_dict.values())
+            total_pore_volume_m3 = sum(
+                (val / params.density_serpentinite) * porosity_used for val in params.kg_rocks_dict.values()
+            )
         except Exception:
             total_pore_volume_m3 = float("nan")
 
-    outer_total_tons_no_sat = total_tons_no_sat if total_tons_no_sat else None
+    outer_total_tons_no_sat = params.total_tons_no_sat if params.total_tons_no_sat else None
 
     with progress_ctx as pbar:
         for i, ft in enumerate(flow_targets):
@@ -1213,7 +1192,7 @@ def analyze_limiting_factors_by_flow_target(
                 if (flow_m3_day and flow_m3_day > 0 and math.isfinite(total_pore_volume_m3))
                 else float("nan")
             )
-            config_dt_cap = mc_saturation_config.get("dt_day", 1.0)
+            config_dt_cap = params.mc_saturation_config.get("dt_day", 1.0)
             if math.isfinite(turnover_days_total) and turnover_days_total > 0:
                 dt_for_flow = max(1e-4, min(config_dt_cap, turnover_days_total / 2.0))
             else:
@@ -1221,28 +1200,28 @@ def analyze_limiting_factors_by_flow_target(
 
             stats_mc = run_saturation_monte_carlo(
                 n_iter=mc_iterations,
-                volume_at_temperature=volume_at_temperature,
-                df_saturation_table=df_saturation_table,
-                mean_pressure_ranges=mean_pressure_ranges,
-                serpentinization_degree=serpentinization_degree,
-                int_fracture_spacing=int_fracture_spacing,
-                permeability_fractures=permeability_fractures,
+                volume_at_temperature=params.volume_at_temperature,
+                df_saturation_table=params.df_saturation_table,
+                mean_pressure_ranges=params.mean_pressure_ranges,
+                serpentinization_degree=params.serpentinization_degree,
+                int_fracture_spacing=params.int_fracture_spacing,
+                permeability_fractures=params.permeability_fractures,
                 flow_target=ft,
-                production_rate_volumetric=production_rate_volumetric,
-                years=int(years),
-                dist_x=dist_x,
-                dist_y=dist_y,
-                dist_z=dist_z,
-                kg_rocks_dict=kg_rocks_dict,
+                production_rate_volumetric=params.production_rate_volumetric,
+                years=int(params.years),
+                dist_x=params.dist_x,
+                dist_y=params.dist_y,
+                dist_z=params.dist_z,
+                kg_rocks_dict=params.kg_rocks_dict,
                 verbose=verbose,
                 show_progress=show_progress,
                 track_timeseries=track_timeseries,
                 dt_day=dt_for_flow,
-                mc_config=mc_saturation_config,
-                n_cores=n_cores,
-                seed=seed,
-                porosity_front=porosity_front,
-                density_serpentinite=density_serpentinite,
+                mc_config=params.mc_saturation_config,
+                n_cores=params.n_cores,
+                seed=params.seed,
+                porosity_front=params.porosity_front,
+                density_serpentinite=params.density_serpentinite,
             )
 
             if stats_mc is None or stats_mc.empty:
