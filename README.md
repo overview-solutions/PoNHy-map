@@ -36,8 +36,7 @@ The config file is YAML and is required. It defines the two main routines and al
 
 When you run `ponhy.py`, it scans the **current working directory** for `*.yaml` / `*.yml` files.
 If multiple YAMLs are found, it lists them and prompts you to choose one. In non-interactive runs,
-it defaults to the first YAML found. If no YAMLs are found, it falls back to
-`ponhy_config_pyrenees.yaml`.
+it defaults to the first YAML found. 
 
 Example prompt (selecting Pyrenees):
 
