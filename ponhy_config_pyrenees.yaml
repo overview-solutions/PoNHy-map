@@ -6,7 +6,7 @@
 
 # PoNHy YAML configuration file
 # All values are preloaded. Edit any value and PoNHy.py will use it.
-# Notes:
+# Notes:__
 # - Strings may be quoted. Quotes are recommended for paths and text.
 # - Arrays use [ ... ].
 # - For N_CORES, use 0 or "auto" to auto-detect CPU count.
