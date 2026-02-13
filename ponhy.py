@@ -1178,7 +1178,7 @@ if run_h2_quantification:
     density_export_cells = density_model_no_info
     magsus_export_cells = magsus_model_no_info
 
-    # Load external temperature CSV, interpolate onto active cells.
+    # Load_ external temperature CSV, interpolate onto active cells.
     temperature_csv = np.loadtxt(temperature_filename, delimiter=',', skiprows=1)
     x_csv_temperature = temperature_csv[:, 0]
     y_csv_temperature = temperature_csv[:, 1]
