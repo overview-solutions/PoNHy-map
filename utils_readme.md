@@ -287,3 +287,5 @@ This module answers the “how stable are the results?” question by running sw
 - `utils/config.py` — the best place to understand required parameters.
 - `utils/no_saturation.py` / `utils/saturation.py` — core MC computations.
 - `utils/uncertainties.py` — convergence sweeps and flow‑target analysis.
+
+```
