@@ -22,15 +22,31 @@ Everything is driven from `ponhy.py` and an editable configuration file.
 ## Key files
 
 - `ponhy.py` - **main entry point** (runs the full workflow).
-- `ponhy_config.yaml` - **configuration file** loaded automatically.
+- `ponhy_config_*.yaml` - **configuration files** (the runner will prompt you to choose).
 - `utils/` - helper modules (plotting, physics, Monte Carlo, reporting, etc.).
 - `Data/` - input datasets (topography, gravity, magnetic, temperature, etc.).
 
 ---
 
-## Configuration (`ponhy_config.yaml`)
+## Configuration (`ponhy_config_*.yaml`)
 
 The config file is YAML and is required. It defines the two main routines and all parameters.
+
+### Selecting a YAML at runtime
+
+When you run `ponhy.py`, it scans the **current working directory** for `*.yaml` / `*.yml` files.
+If multiple YAMLs are found, it lists them and prompts you to choose one. In non-interactive runs,
+it defaults to the first YAML found. If no YAMLs are found, it falls back to
+`ponhy_config_pyrenees.yaml`.
+
+Example prompt (selecting Pyrenees):
+
+```
+[PoNHy] Config YAMLs found:
+	1) ponhy_config_california.yaml
+	2) ponhy_config_pyrenees.yaml
+Select YAML to use (number): 2
+```
 
 ### Rules
 
