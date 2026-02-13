@@ -22,24 +22,28 @@ Everything is driven from `ponhy.py` and an editable configuration file.
 ## Key files
 
 - `ponhy.py` - **main entry point** (runs the full workflow).
-- `ponhy_config.txt` - **configuration file** loaded automatically if present.
+- `ponhy_config.yaml` - **configuration file** loaded automatically.
 - `utils/` - helper modules (plotting, physics, Monte Carlo, reporting, etc.).
 - `Data/` - input datasets (topography, gravity, magnetic, temperature, etc.).
 
 ---
 
-## Configuration (`ponhy_config.txt`)
+## Configuration (`ponhy_config.yaml`)
 
-The config file is a plain text file with `KEY = value` pairs and comments. If it exists, it **overrides** the defaults in `ponhy.py`. If it’s missing, PoNHy uses the internal defaults.
+The config file is YAML and is required. It defines the two main routines and all parameters.
 
 ### Rules
 
-- Booleans: `true/false` (case‑insensitive).
+- Booleans: `true/false`.
 - Strings: use quotes for paths, e.g. `"/Data/Ext_Topo.txt"`.
-- Arrays: use Python‑style lists: `[1, 2, 3]`.
-- Sections: lines like `[MC_NO_SATURATION_CONFIG]` start a nested dictionary.
+- Arrays: use YAML lists: `[1, 2, 3]` or multi-line lists.
+- Nested blocks: e.g. `MC_NO_SATURATION_CONFIG:` define grouped settings.
 
-If the file has errors or missing keys, PoNHy prints the issue and **exits**.
+### Optional sections via run flags
+
+- If `RUN_INVERSION: false`, **all inversion parameters may be omitted**.
+- If `RUN_H2_QUANTIFICATION: false`, **all quantification parameters may be omitted**.
+- If a routine is enabled (`true`), its parameters are required.
 
 ---
 
@@ -91,7 +95,7 @@ PoNHy is modular; key helpers live in `utils/`:
 
 ## Typical workflow
 
-1. Edit `ponhy_config.txt` to set paths and parameters.
+1. Edit `ponhy_config.yaml` to set paths and parameters.
 2. Run `ponhy.py`.
 3. Review plots and CSV outputs in the timestamped results folder.
 
@@ -101,13 +105,19 @@ PoNHy is modular; key helpers live in `utils/`:
 
 - The script is designed for scientific workflows and can be compute‑intensive.
 - If you run both routines, the inversion outputs are reused in the H₂ stage.
-- If you set `RUN_INVERSION = false`, only the H₂ quantification runs (but you need to provide files for the serpentinites).
+- If you set `RUN_INVERSION: false`, only the H₂ quantification runs (you still need the serpentinite inputs).
+- If you set `RUN_H2_QUANTIFICATION: false`, only the inversion runs.
+
+### Reproducibility
+
+- `SEED` + `USE_GLOBAL_SEED: true` enforce a **single global seed**.
+- Individual sampling seeds are not used when global seed is enabled.
 
 ---
 
 ## Troubleshooting
 
-- **Missing file**: check paths in `ponhy_config.txt`.
+- **Missing file**: check paths in `ponhy_config.yaml`.
 - **Config error**: PoNHy prints the invalid key or missing section and exits.
 - **Slow runs**: reduce Monte Carlo iterations or set `N_CORES` to a smaller value.
 

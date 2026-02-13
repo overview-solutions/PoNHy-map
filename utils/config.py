@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, fields, MISSING
-from typing import Any, Dict, Optional, Sequence, Tuple
+from dataclasses import asdict, dataclass, fields, MISSING, replace
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, get_args, get_origin
 
 import yaml
 
@@ -533,6 +533,24 @@ def _from_locals(cls, scope: Dict[str, Any]):
 
 
 def _get_scope_value(scope: Dict[str, Any], name: str) -> Any:
+    alias_map = {
+        "grav_filename": "grav_data_filename",
+        "mag_filename": "mag_data_filename",
+        "unit_dens_adj": "unit_dens_adj_resolved",
+        "unit_magsus": "unit_magsus_resolved",
+        "unit_dens_disp": "unit_dens_disp_resolved",
+        "unit_magsus_disp": "unit_magsus_disp_resolved",
+    }
+    if name in alias_map:
+        alias_name = alias_map[name]
+        if alias_name in scope:
+            return scope[alias_name]
+        upper_alias = alias_name.upper()
+        if upper_alias in scope:
+            return scope[upper_alias]
+        lower_alias = alias_name.lower()
+        if lower_alias in scope:
+            return scope[lower_alias]
     if name in scope:
         return scope[name]
     upper_name = name.upper()
@@ -741,11 +759,192 @@ def _get(data: Dict[str, Any], key: str) -> Any:
     raise KeyError(f"Missing required config key: {key}")
 
 
+def _has_key(data: Dict[str, Any], key: str) -> bool:
+    return key in data or key.upper() in data or key.lower() in data
+
+
+def _default_for_type(tp: Any) -> Any:
+    origin = get_origin(tp)
+    args = get_args(tp)
+    if origin is tuple and len(args) == 2:
+        return (1.0, 1.0)
+    if origin in (list, tuple, Sequence):
+        return []
+    if origin is Union and type(None) in args:
+        return None
+    if tp is bool:
+        return False
+    if tp is int:
+        return 0
+    if tp is float:
+        return 0.0
+    if tp is str:
+        return ""
+    return None
+
+
+def _default_dataclass_payload(cls) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {}
+    for field in fields(cls):
+        if field.name == "sampling":
+            payload[field.name] = "uniform"
+        elif field.name == "sampling_seed":
+            payload[field.name] = None
+        elif field.name == "n_iter":
+            payload[field.name] = 0
+        elif field.name in {
+            "verbose",
+            "show_progress",
+            "reuse_from_single_run",
+            "save_plot",
+            "silence_runs",
+            "save_timeseries_plots",
+        }:
+            payload[field.name] = False
+        else:
+            payload[field.name] = _default_for_type(field.type)
+    return payload
+
+
+def _seed_disabled_section_defaults(data: Dict[str, Any], *, run_inversion: bool, run_h2_quantification: bool) -> None:
+    inversion_only_fields = {
+        "grav_file",
+        "mag_file",
+        "initial_model",
+        "use_initial_model",
+        "background_dens",
+        "background_susc",
+        "dx",
+        "dy",
+        "dz",
+        "depth_core",
+        "expansion_percentage",
+        "expansion_type",
+        "dominant_side",
+        "original_y",
+        "original_x",
+        "uncer_grav",
+        "uncer_mag",
+        "inclination",
+        "declination",
+        "strength",
+        "unit_labels",
+        "unit_dens_adj_list",
+        "unit_magsus_list",
+        "unit_dens_disp_list",
+        "unit_magsus_disp_list",
+        "vol_unit_list",
+        "serpentinite_label",
+        "low_dens_adj",
+        "up_dens_adj",
+        "lower_susceptibility",
+        "upper_susceptibility",
+        "max_iter",
+        "max_iter_ls",
+        "max_iter_cg",
+        "tol_cg",
+        "save_pred_residual_npy",
+        "alpha_pgi",
+        "alpha_x",
+        "alpha_y",
+        "alpha_z",
+        "alpha_xx",
+        "alpha_yy",
+        "alpha_zz",
+        "alpha0_ratio_dens",
+        "alpha0_ratio_susc",
+        "beta0_ratio",
+        "cooling_factor",
+        "tolerance",
+        "progress",
+        "use_chi_small",
+        "chi_small",
+        "wait_till_stable",
+        "update_gmm",
+        "kappa",
+        "chi0_ratio",
+    }
+    quant_only_fields = {
+        "db_dir",
+        "temperature_file",
+        "density_file",
+        "magsus_file",
+        "seed",
+        "use_global_seed",
+        "dist_x",
+        "dist_y",
+        "dist_z",
+        "density_serpentinite",
+        "porosity_front",
+        "int_fracture_spacing",
+        "permeability_fractures",
+        "waterrockratio",
+        "flow_target",
+        "density_litho",
+        "gravity",
+        "lithology_code",
+        "years",
+        "molar_mass_h2",
+        "molar_mass_h2o",
+        "v_ref_synthetic",
+        "t_ref_range",
+        "n_cores",
+        "run_montecarlo_fault",
+        "fault_mc_n_iter",
+        "flow_target_fracture_config",
+        "mc_no_saturation_config",
+        "mc_saturation_config",
+        "run_univariate_analysis_no_sat",
+        "run_univariate_analysis_sat",
+        "univariate_analysis_config",
+        "run_mc_convergence_sweep",
+        "mc_convergence_sweep_config",
+        "run_analyze_limiting_factors",
+        "flow_target_log_min",
+        "flow_target_log_max",
+        "flow_target_n_samples",
+        "mc_flow_target_config",
+    }
+    field_types = {field.name: field.type for field in fields(Config)}
+    dataclass_defaults = {
+        "flow_target_fracture_config": _default_dataclass_payload(FlowTargetFractureConfig),
+        "mc_no_saturation_config": _default_dataclass_payload(McNoSaturationConfig),
+        "mc_saturation_config": _default_dataclass_payload(McSaturationConfig),
+        "univariate_analysis_config": _default_dataclass_payload(UnivariateAnalysisConfig),
+        "mc_convergence_sweep_config": _default_dataclass_payload(McConvergenceSweepConfig),
+        "mc_flow_target_config": _default_dataclass_payload(McFlowTargetConfig),
+    }
+
+    if not run_inversion:
+        for field_name in inversion_only_fields:
+            key = field_name.upper()
+            if not _has_key(data, key):
+                data[key] = _default_for_type(field_types.get(field_name))
+
+    if not run_h2_quantification:
+        for field_name in quant_only_fields:
+            key = field_name.upper()
+            if _has_key(data, key):
+                continue
+            if field_name in dataclass_defaults:
+                data[key] = dataclass_defaults[field_name]
+            else:
+                data[key] = _default_for_type(field_types.get(field_name))
+
+
 def load_config(path: str) -> Config:
     with open(path, "r", encoding="utf-8") as handle:
         data = yaml.safe_load(handle) or {}
     if not isinstance(data, dict):
         raise ValueError("Config YAML must contain a top-level mapping.")
+
+    run_inversion = bool(_get(data, "run_inversion"))
+    run_h2_quantification = bool(_get(data, "run_h2_quantification"))
+    _seed_disabled_section_defaults(
+        data,
+        run_inversion=run_inversion,
+        run_h2_quantification=run_h2_quantification,
+    )
 
     flow_target_fracture_config = FlowTargetFractureConfig(**_get(data, "FLOW_TARGET_FRACTURE_CONFIG"))
     mc_no_saturation_data = _get(data, "MC_NO_SATURATION_CONFIG")
@@ -808,9 +1007,9 @@ def load_config(path: str) -> Config:
         save_timeseries_plots=bool(flow_target_data["save_timeseries_plots"]),
     )
 
-    return Config(
-        run_inversion=bool(_get(data, "run_inversion")),
-        run_h2_quantification=bool(_get(data, "run_h2_quantification")),
+    cfg = Config(
+        run_inversion=run_inversion,
+        run_h2_quantification=run_h2_quantification,
         base_dir=str(_get(data, "base_dir")),
         topo_file=str(_get(data, "topo_file")),
         grav_file=str(_get(data, "grav_file")),
@@ -909,3 +1108,15 @@ def load_config(path: str) -> Config:
         flow_target_n_samples=int(_get(data, "flow_target_n_samples")),
         mc_flow_target_config=mc_flow_target_config,
     )
+
+    if cfg.use_global_seed:
+        seed = int(cfg.seed)
+        cfg = replace(
+            cfg,
+            seed=seed,
+            mc_no_saturation_config=replace(cfg.mc_no_saturation_config, sampling_seed=seed),
+            mc_saturation_config=replace(cfg.mc_saturation_config, sampling_seed=seed),
+            univariate_analysis_config=replace(cfg.univariate_analysis_config, sampling_seed=seed),
+        )
+
+    return cfg

@@ -151,6 +151,49 @@ from utils.config import (
     load_config,
 )
 
+def _select_config_yaml(default_name: str = "ponhy_config_pyrenees.yaml") -> str:
+    """Select a YAML config from the current working directory.
+
+    When multiple YAML files exist, prompt the user to choose one. If stdin is not
+    interactive or the input is invalid, fall back to the first candidate.
+    """
+    cwd = os.getcwd()
+    candidates = [
+        os.path.join(cwd, name)
+        for name in sorted(os.listdir(cwd))
+        if name.lower().endswith((".yaml", ".yml"))
+    ]
+
+    default_path = os.path.join(cwd, default_name)
+    if not candidates:
+        if os.path.exists(default_path):
+            return default_path
+        return os.path.join(os.path.dirname(__file__), default_name)
+
+    if len(candidates) == 1:
+        return candidates[0]
+
+    print("\n[PoNHy] Config YAMLs found:")
+    for idx, path in enumerate(candidates, start=1):
+        print(f"  {idx}) {os.path.basename(path)}")
+
+    if not sys.stdin.isatty():
+        print("[PoNHy] Non-interactive session detected. Using the first YAML.")
+        return candidates[0]
+
+    while True:
+        choice = input("Select YAML to use (number -> Enter): ").strip()
+        if not choice:
+            return candidates[0]
+        if choice.isdigit():
+            idx = int(choice)
+            if 1 <= idx <= len(candidates):
+                return candidates[idx - 1]
+        print("Invalid selection. Try again.")
+
+
+CONFIG_YAML_FILE = _select_config_yaml()
+
 # ========================================================  Dictionaries and data for calculations ========================================================
 # Compositions of the rocks estimated in thermodynamic databases. This is just for info and printing (not used in calculations)
 lithologies_dict = {
@@ -197,7 +240,6 @@ serp_corr_percentage = {
     'correction': np.array([0.00, 3.29, 6.65, 10.06, 13.55, 17.10, 20.74, 24.46, 28.28, 32.21, 36.26, 40.45, 44.80, 49.33, 54.08, 59.11, 64.48, 70.33, 76.89, 84.70, 98.00])
 }
 
-CONFIG_YAML_FILE = os.path.join(os.path.dirname(__file__), "ponhy_config.yaml")
 cfg: Config = load_config(CONFIG_YAML_FILE)
 
 # Bind config values into module-level names.
