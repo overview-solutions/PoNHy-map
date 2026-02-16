@@ -39,7 +39,7 @@ TEMPERATURE_FILE: "/Data_Pyrenees/Temperature_model_new.csv"  # Path to temperat
 DENSITY_FILE: "/Data_Pyrenees/Density_Serpentinite.csv"  # Path to density of serpentinites file [Q]
 MAGSUS_FILE: "/Data_Pyrenees/Magsus_Serpentinite.csv"  # Path to magnetic susceptibility of serpentinites file [Q]
 
-SAVE_SVG: false  # Save SVG copies of plots alongside PNG outputs [IQ]
+SAVE_SVG: true # Save SVG copies of plots alongside PNG outputs [IQ]
 
 # ================================ Mesh parameters (IQ) ================================
 # Mesh parameters.

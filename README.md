@@ -28,6 +28,35 @@ Everything is driven from `ponhy.py` and an editable configuration file.
 
 ---
 
+## Environment setup
+
+PoNHy ships with a pinned Conda environment definition (`environment.yml`).
+
+### Conda (recommended)
+
+Create and activate the environment:
+
+```bash
+conda env create -f environment.yml
+conda activate hydrogen
+```
+
+## What the `utils/` modules do
+
+PoNHy is modular; key helpers live in `utils/`:
+
+- `geometry.py` - mesh construction, interpolation, volume/mask calculations.
+- `general.py` - thermodynamic lookup, serpentinization math, conversion utilities.
+- `plotting.py` - plotting utilities and result visualizations.
+- `reporting.py` - formatted summaries and reports for each step.
+- `helpers.py` - common helpers (sampling, scaling, progress bars, etc.).
+- `saturation.py` - saturated H₂ Monte Carlo workflow.
+- `no_saturation.py` - no‑saturation H₂ Monte Carlo workflow.
+- `uncertainties.py` - convergence sweeps and limiting‑factor analysis.
+- `logging.py` - custom print logging to file.
+
+---
+
 ## Configuration (`ponhy_config_*.yaml`)
 
 The config file is YAML and is required. It defines the two main routines and all parameters.
@@ -64,19 +93,6 @@ Select YAML to use (number): 2
 
 ## Running the code
 
-## Environment setup
-
-PoNHy ships with a pinned Conda environment definition (`environment.yml`).
-
-### Conda (recommended)
-
-Create and activate the environment:
-
-```bash
-conda env create -f environment.yml
-conda activate hydrogen
-```
-
 From the `PoNHy` folder, run:
 
 ```bash
@@ -89,22 +105,6 @@ Outputs are saved in a timestamped folder inside `BASE_DIR`, for example:
 Results_Inversion_YYYYMMDD_HHMMSS/
 Results_GenerationYYYYMMDD_HHMMSS/
 ```
-
----
-
-## What the `utils/` modules do
-
-PoNHy is modular; key helpers live in `utils/`:
-
-- `geometry.py` - mesh construction, interpolation, volume/mask calculations.
-- `general.py` - thermodynamic lookup, serpentinization math, conversion utilities.
-- `plotting.py` - plotting utilities and result visualizations.
-- `reporting.py` - formatted summaries and reports for each step.
-- `helpers.py` - common helpers (sampling, scaling, progress bars, etc.).
-- `saturation.py` - saturated H₂ Monte Carlo workflow.
-- `no_saturation.py` - no‑saturation H₂ Monte Carlo workflow.
-- `uncertainties.py` - convergence sweeps and limiting‑factor analysis.
-- `logging.py` - custom print logging to file.
 
 ---
 
