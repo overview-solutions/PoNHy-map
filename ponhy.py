@@ -164,11 +164,11 @@ def _select_config_yaml(default_name: str = "ponhy_config_pyrenees.yaml") -> str
         if name.lower().endswith((".yaml", ".yml"))
     ]
 
-    default_path = os.path.join(cwd, default_name)
     if not candidates:
-        if os.path.exists(default_path):
-            return default_path
-        return os.path.join(os.path.dirname(__file__), default_name)
+        raise FileNotFoundError(
+            "No YAML config files found in the current working directory. "
+            "Please add a ponhy_config_*.yaml file and try again."
+        )
 
     if len(candidates) == 1:
         return candidates[0]
