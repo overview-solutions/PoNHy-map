@@ -162,6 +162,7 @@ def _select_config_yaml(default_name: str = "ponhy_config_pyrenees.yaml") -> str
         os.path.join(cwd, name)
         for name in sorted(os.listdir(cwd))
         if name.lower().endswith((".yaml", ".yml"))
+        and name.lower() != "environment.yml"
     ]
 
     if not candidates:
