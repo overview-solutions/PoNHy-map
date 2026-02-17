@@ -1,6 +1,6 @@
 # Auxiliary: Temperature Calculation (Pyrenees)
 
-This directory contains the script `Temperature_Calculation_Pyrenees.py`, which computes a 1D temperature profile with uncertainty for thermal models in the Pyrenees using a vertical mesh and background heat flow. The script:
+This directory contains the script `Temperature_Calculation.py`, which computes a 1D temperature profile with uncertainty for thermal models in the Pyrenees using a vertical mesh and background heat flow. The script:
 
 - Reads topography $(X, Y, Z)$ from a `.txt` or `.csv` file.
 - Builds a thermal conductivity profile with depth.
