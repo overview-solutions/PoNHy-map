@@ -34,7 +34,7 @@ conda activate temp_calc
 The script expects a topography file with $(X, Y, Z)$ columns. You can pass the file path as an argument:
 
 ```bash
-python Temperature_Calculation_Pyrenees.py /path/to/Ext_Topo.txt
+python Temperature_Calculation.py /path/to/Ext_Topo.txt
 ```
 
 If no argument is provided, it uses the default path defined inside the script.
