@@ -385,6 +385,9 @@ INVERSION_PARAM_NAMES = [
 if run_inversion:
     # Print the report header once for the full run (stdout is redirected later).
     _print_header_once()
+
+    print("\nPlease wait, it can take a few minutes.\n")
+
     # Validate required inversion parameters are present and non-empty.
     inversion_inputs = {name: getattr(cfg, name, None) for name in INVERSION_PARAM_NAMES}
     missing_inversion = [name for name in INVERSION_PARAM_NAMES if _is_missing(inversion_inputs.get(name))]
