@@ -39,6 +39,37 @@ python Temperature_Calculation_Pyrenees.py /path/to/Ext_Topo.txt
 
 If no argument is provided, it uses the default path defined inside the script.
 
+## Configurations
+
+The same script runs for both regions; you only need to switch the configuration (input file path and thermal parameters).
+
+### Pyrenees (default)
+
+The script is currently configured for the Pyrenees by default:
+
+- `default_dir_path`: `/path/to/Data_Pyrenees/Ext_Topo.txt`
+- `temp_sup`: `15.0` °C
+- `heat_flow`: `0.075` W/m²
+- `dz_uniform`: `50.0` m
+- `intervals`: `[(0, 10), (10, 5000), (5000, 15000), (15000, max_depth)]`
+- `conductivity_values`: `[1.1, 2.50, 3.00, 3.50, 4.00]`
+
+Run with the default Pyrenees data (no argument) or pass the Pyrenees topo file explicitly.
+
+### California
+
+To run a California model, use the following configuration (from the California setup you provided):
+
+- `default_dir_path`: `/path/to/California/Data_Big/Topo_Big.csv`
+- `max_depth`: `30000 + max_elevation`
+- `temp_sup`: `15.0` °C
+- `heat_flow`: `0.095` W/m²
+- `dz_uniform`: `100.0` m
+- `intervals`: `[(0, 10), (10, 5000), (5000, 15000), (15000, max_depth)]`
+- `conductivity_values`: `[1.1, 2.50, 3.00, 3.50, 4.00]`
+
+Update these values in the script (or pass the California topo file as a CLI argument if you prefer not to edit `default_dir_path`).
+
 ### Outputs
 
 An `Ext_Data` directory is created next to the input file with:
