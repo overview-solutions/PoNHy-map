@@ -24,6 +24,7 @@ Everything is driven from `ponhy.py` and an editable configuration file.
 - `ponhy.py` - **main entry point** (runs the full workflow).
 - `ponhy_config_*.yaml` - **configuration files** (the runner will prompt you to choose).
 - `utils/` - helper modules (plotting, physics, Monte Carlo, reporting, etc.).
+- `Auxiliary_functions/` - auxiliary utilities (e.g., temperature distribution calculations).
 - `Data/` - input datasets (topography, gravity, magnetic, temperature, etc.).
 
 ---
