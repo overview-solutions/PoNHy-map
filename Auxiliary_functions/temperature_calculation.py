@@ -9,8 +9,62 @@ from typing import Any, cast
 import sys
 
 
-# Path to the data directory or a specific topo file
-default_dir_path = r"/home/christiansen/Projects/Python_Git/PoNHy/Data_Pyrenees/Ext_Topo.txt"
+def _select_data_dir() -> str:
+    search_roots = [os.getcwd(), os.path.dirname(__file__), os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))]
+    candidates = []
+    for root in search_roots:
+        if not os.path.isdir(root):
+            continue
+        for name in sorted(os.listdir(root)):
+            if name.lower().startswith("data"):
+                path = os.path.join(root, name)
+                if os.path.isdir(path):
+                    candidates.append(path)
+
+    # Remove duplicates while preserving order.
+    seen = set()
+    unique_candidates = []
+    for path in candidates:
+        if path in seen:
+            continue
+        seen.add(path)
+        unique_candidates.append(path)
+
+    if not unique_candidates:
+        raise FileNotFoundError("No Data/data folders found near the script or current directory.")
+    if len(unique_candidates) == 1:
+        return unique_candidates[0]
+
+    print("\n[Temperature] Data folders found:")
+    for idx, path in enumerate(unique_candidates, start=1):
+        print(f"  {idx}) {path}")
+
+    if not sys.stdin.isatty():
+        raise RuntimeError("Multiple Data folders found but no interactive terminal to select one.")
+
+    while True:
+        choice = input("Select Data folder (number -> Enter): ").strip()
+        if not choice:
+            return unique_candidates[0]
+        if choice.isdigit():
+            idx = int(choice)
+            if 1 <= idx <= len(unique_candidates):
+                return unique_candidates[idx - 1]
+        print("Invalid selection. Try again.")
+
+
+def _resolve_topo_file(base_dir: str) -> str:
+    topo_candidates = [
+        os.path.join(base_dir, "Ext_Topo.txt"),
+        os.path.join(base_dir, "Ext_Topo.csv"),
+    ]
+    for path in topo_candidates:
+        if os.path.exists(path):
+            return path
+    raise FileNotFoundError(
+        "No Ext_Topo.txt or Ext_Topo.csv found in the selected Data folder."
+    )
+
 
 # Files to work with
 topo_arg = sys.argv[1] if len(sys.argv) > 1 else None
@@ -22,16 +76,13 @@ if topo_arg:
         raise ValueError("Topo file must be .txt or .csv")
     dir_path = os.path.dirname(topo_file) + os.path.sep
 else:
-    if os.path.isfile(default_dir_path) or default_dir_path.lower().endswith((".txt", ".csv")):
-        topo_file = default_dir_path
-        dir_path = os.path.dirname(topo_file) + os.path.sep
-    else:
-        dir_path = default_dir_path
-        topo_candidates = [
-            os.path.join(dir_path, "Ext_Topo.txt"),
-            os.path.join(dir_path, "Ext_Topo.csv"),
-        ]
-        topo_file = next((path for path in topo_candidates if os.path.exists(path)), topo_candidates[0])
+    dir_path = _select_data_dir() + os.path.sep
+    topo_file = _resolve_topo_file(dir_path)
+
+generate_plots = False
+if sys.stdin.isatty():
+    response = input("Generate plots? [y/N]: ").strip().lower()
+    generate_plots = response in {"y", "yes"}
 
 def load_topo_xyz(path: str) -> np.ndarray:
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
@@ -55,8 +106,7 @@ def load_topo_xyz(path: str) -> np.ndarray:
 
 topo_xyz = load_topo_xyz(str(topo_file))
 
-image_dir = os.path.join(dir_path, "Ext_Data")
-os.makedirs(image_dir, exist_ok=True)
+output_dir = dir_path
 
 # Extract columns
 x_csv = topo_xyz[:, 0]
@@ -91,19 +141,20 @@ def thermal_conductivity(z, intervals=intervals, values=conductivity_values):
 # Create a uniform mesh with x-meter intervals up to max depth
 z_uniform_mesh = np.arange(0, max_depth + dz_uniform, dz_uniform)
 
-# Plot conductivity with depth
+# Plot conductivity with depth (optional)
 conductivities = [thermal_conductivity(z) for z in z_uniform_mesh]
-plt.figure(figsize=(5, 10))
-plt.plot(conductivities, z_uniform_mesh, label='Thermal Conductivity Profile', color='green')
-plt.xlabel('Thermal Conductivity (W/mK)')
-plt.ylabel('Depth (m)')
-plt.title('Thermal Conductivity with Depth')
-plt.gca().invert_yaxis()  # Invert y-axis for depth
-plt.grid(True)
-plt.legend()
-# Save the plot as PNG in the Ext_Data directory
-plt.savefig(os.path.join(image_dir, "thermal_conductivity_profile.png"), dpi=300)
-plt.show()
+if generate_plots:
+    plt.figure(figsize=(5, 10))
+    plt.plot(conductivities, z_uniform_mesh, label='Thermal Conductivity Profile', color='green')
+    plt.xlabel('Thermal Conductivity (W/mK)')
+    plt.ylabel('Depth (m)')
+    plt.title('Thermal Conductivity with Depth')
+    plt.gca().invert_yaxis()  # Invert y-axis for depth
+    plt.grid(True)
+    plt.legend()
+    # Save the plot as PNG in the output directory
+    plt.savefig(os.path.join(output_dir, "thermal_conductivity_profile.png"), dpi=300)
+    plt.show()
 
 
 n_simulations = 50  # Number of simulations for uncertainty analysis
@@ -146,20 +197,21 @@ all_temperatures = np.array(all_temperatures)
 mean_temperature = np.mean(all_temperatures, axis=0)
 std_temperature = np.std(all_temperatures, axis=0)
 
-# Plot temperature with uncertainty
-plt.figure(figsize=(5, 10))
-plt.plot(mean_temperature, z_uniform_mesh, label='Mean Temperature Profile', color='blue')
-plt.fill_betweenx(z_uniform_mesh, mean_temperature - std_temperature, mean_temperature + std_temperature, color='lightblue', alpha=0.5, label='Uncertainty Range (1σ)')
+# Plot temperature with uncertainty (optional)
+if generate_plots:
+    plt.figure(figsize=(5, 10))
+    plt.plot(mean_temperature, z_uniform_mesh, label='Mean Temperature Profile', color='blue')
+    plt.fill_betweenx(z_uniform_mesh, mean_temperature - std_temperature, mean_temperature + std_temperature, color='lightblue', alpha=0.5, label='Uncertainty Range (1σ)')
 
-plt.xlabel('Temperature (°C)')
-plt.ylabel('Depth (m)')
-plt.title('Temperature Profile with Uncertainty')
-plt.gca().invert_yaxis()  # Invert y-axis for depth
-plt.grid(True)
-plt.legend()
-# Save the plot as PNG in the Ext_Data directory
-plt.savefig(os.path.join(image_dir, "temperature_profile_with_uncertainty.png"), dpi=300)
-plt.show()
+    plt.xlabel('Temperature (°C)')
+    plt.ylabel('Depth (m)')
+    plt.title('Temperature Profile with Uncertainty')
+    plt.gca().invert_yaxis()  # Invert y-axis for depth
+    plt.grid(True)
+    plt.legend()
+    # Save the plot as PNG in the output directory
+    plt.savefig(os.path.join(output_dir, "temperature_profile_with_uncertainty.png"), dpi=300)
+    plt.show()
 
 # Function to export temperature to CSV with decimal notation
 def export_topography_aligned_temperature_to_csv_v2(x_csv, y_csv, z_csv, z_values, T, max_depth_adjusted, file_path):
@@ -192,8 +244,15 @@ def export_topography_aligned_temperature_to_csv_v2(x_csv, y_csv, z_csv, z_value
 
     return export_data_list
 
-export_file_path = os.path.join(dir_path, "Ext_Data/Temperature_model_new.csv")
+default_output_name = "Temperature_model_new.csv"
+if sys.stdin.isatty():
+    name_input = input(f"Output filename (default: {default_output_name}): ").strip()
+    output_name = name_input or default_output_name
+else:
+    output_name = default_output_name
+export_file_path = os.path.join(output_dir, output_name)
 exported_data = export_topography_aligned_temperature_to_csv_v2(x_csv, y_csv, z_csv, z_uniform_mesh, mean_temperature, max_depth, export_file_path)
+print(f"Temperature distribution saved to: {export_file_path}")
 
 # Calculate the weighted average temperature gradient
 gradients = []
