@@ -80,9 +80,21 @@ Select YAML to use (number): 2
 ### Rules
 
 - Booleans: `true/false`.
-- Strings: use quotes for paths, e.g. `"/Data/Ext_Topo.txt"`.
+- Strings: use quotes for paths and names.
 - Arrays: use YAML lists: `[1, 2, 3]` or multi-line lists.
 - Nested blocks: e.g. `MC_NO_SATURATION_CONFIG:` define grouped settings.
+
+### Base directory and data folders
+
+- `BASE_DIR: "auto"` uses the folder where you run `ponhy.py`.
+- You can also set `BASE_DIR` to a fixed path if you prefer hardcoding it.
+- After loading the YAML, PoNHy searches inside `BASE_DIR` for folders that start with `Data` (case-insensitive, e.g. `Data_Pyrenees`, `data_pyrenees`) and prompts you to pick one if there are multiple.
+
+### Data file paths
+
+- In the YAML, you can provide **only the filename** (recommended), e.g. `Ext_Topo.txt`.
+- Those filenames are resolved inside the selected `Data*` folder.
+- If you want to hardcode, you can also provide an absolute path or a path relative to `BASE_DIR`.
 
 ### Optional sections via run flags
 
@@ -100,7 +112,7 @@ From the `PoNHy` folder, run:
 python ponhy.py
 ```
 
-Outputs are saved in a timestamped folder inside `BASE_DIR`, for example:
+Outputs are saved in a timestamped folder inside the resolved `BASE_DIR`, for example:
 
 ```
 Results_Inversion_YYYYMMDD_HHMMSS/

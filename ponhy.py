@@ -193,6 +193,60 @@ def _select_config_yaml(default_name: str = "ponhy_config_pyrenees.yaml") -> str
         print("Invalid selection. Try again.")
 
 
+def _discover_data_dirs(root: str) -> List[str]:
+    if not root or not os.path.isdir(root):
+        return []
+    return [
+        os.path.join(root, name)
+        for name in sorted(os.listdir(root))
+        if name.lower().startswith("data") and os.path.isdir(os.path.join(root, name))
+    ]
+
+
+def _select_data_dir(root: str) -> Optional[str]:
+    candidates = _discover_data_dirs(root)
+    if not candidates:
+        return None
+    if len(candidates) == 1:
+        return candidates[0]
+
+    print("\n[PoNHy] Data folders found:")
+    for idx, path in enumerate(candidates, start=1):
+        print(f"  {idx}) {path}")
+
+    if not sys.stdin.isatty():
+        raise RuntimeError("Multiple Data folders found but no interactive terminal to select one.")
+
+    while True:
+        choice = input("Select Data folder (number -> Enter): ").strip()
+        if not choice:
+            return candidates[0]
+        if choice.isdigit():
+            idx = int(choice)
+            if 1 <= idx <= len(candidates):
+                return candidates[idx - 1]
+        print("Invalid selection. Try again.")
+
+
+def _rewrite_data_path(base_dir: str, data_dir: str, path: Optional[str]) -> Optional[str]:
+    if path is None:
+        return None
+    if not isinstance(path, str):
+        path = str(path)
+    cleaned = path.strip()
+    if not cleaned:
+        return None
+
+    if os.path.isabs(cleaned):
+        return cleaned
+
+    has_sep = any(sep in cleaned for sep in (os.sep, "/", "\\"))
+    if has_sep:
+        return os.path.join(base_dir, cleaned)
+
+    return os.path.join(data_dir, cleaned)
+
+
 CONFIG_YAML_FILE = _select_config_yaml()
 
 # ========================================================  Dictionaries and data for calculations ========================================================
@@ -242,6 +296,33 @@ serp_corr_percentage = {
 }
 
 cfg: Config = load_config(CONFIG_YAML_FILE)
+
+# Auto-detect base_dir unless a manual path is provided in YAML.
+base_dir_candidate = (cfg.base_dir or "").strip()
+if not base_dir_candidate or base_dir_candidate.lower() in {"auto", "none"}:
+    base_dir_candidate = os.path.abspath(os.getcwd())
+cfg.base_dir = base_dir_candidate
+
+data_keys = (
+    "topo_file",
+    "grav_file",
+    "mag_file",
+    "initial_model",
+    "db_dir",
+    "temperature_file",
+    "density_file",
+    "magsus_file",
+)
+data_dir_selected = _select_data_dir(cfg.base_dir)
+if data_dir_selected is None:
+    raise FileNotFoundError(
+        "No Data* folders found under base_dir. "
+        "Add a Data_... folder or update the config paths."
+    )
+
+for key in data_keys:
+    value = getattr(cfg, key, None)
+    setattr(cfg, key, _rewrite_data_path(cfg.base_dir, data_dir_selected, value))
 
 # Bind config values into module-level names.
 run_inversion = cfg.run_inversion

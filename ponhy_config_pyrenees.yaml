@@ -16,15 +16,15 @@ RUN_INVERSION: true  # Set True to run the inversion routine.
 RUN_H2_QUANTIFICATION: true  # Set True to run the H2 quantification routine.
 
 # ================================ Paths (IQ) ================================
-BASE_DIR: "/home/christiansen/Projects/Python_Git/PoNHy"  # Change this to your base directory [IQ]
+BASE_DIR: "auto"  # Auto-detect base directory from where the code is run [IQ]
 
 # Shared data paths (used by both routines)
-TOPO_FILE: "/Data_Pyrenees/Ext_Topo.txt"  # Path to topography file [IQ]
+TOPO_FILE: "Ext_Topo.txt"  # Topography file name (located inside selected Data folder) [IQ]
 
 # Inversion-only paths (used when RUN_INVERSION=True)
-GRAV_FILE: "/Data_Pyrenees/Ext_Grav.txt"  # Path to gravity data file [I]
-MAG_FILE: "/Data_Pyrenees/Ext_Mag_down.txt"  # Path to magnetic data file [I]
-INITIAL_MODEL: "/Data_Pyrenees/Updated_Geology_Pyrenees.csv"  # Path to initial model file [I]
+GRAV_FILE: "Ext_Grav.txt"  # Gravity data file name [I]
+MAG_FILE: "Ext_Mag_down.txt"  # Magnetic data file name [I]
+INITIAL_MODEL: "Updated_Geology_Pyrenees.csv"  # Initial model file name [I]
 
 # Initial model. If not set it to: USE_INITIAL_MODEL = False
 USE_INITIAL_MODEL: true  # [I]
@@ -34,10 +34,10 @@ BACKGROUND_DENS: -1e-4  # Used when USE_INITIAL_MODEL = False [I]
 BACKGROUND_SUSC: 1e-4  # Used when USE_INITIAL_MODEL = False [I]
 
 # H2 quantification paths (used when RUN_H2_QUANTIFICATION=True)
-DB_DIR: "/Data_Pyrenees/DB0"  # Path to H2 database directory [Q]
-TEMPERATURE_FILE: "/Data_Pyrenees/Temperature_model_new.csv"  # Path to temperature file [Q]
-DENSITY_FILE: "/Data_Pyrenees/Density_Serpentinite.csv"  # Path to density of serpentinites file [Q]
-MAGSUS_FILE: "/Data_Pyrenees/Magsus_Serpentinite.csv"  # Path to magnetic susceptibility of serpentinites file [Q]
+DB_DIR: "DB0"  # H2 database folder name [Q]
+TEMPERATURE_FILE: "Temperature_model_new.csv"  # Temperature file name [Q]
+DENSITY_FILE: "Density_Serpentinite.csv"  # Density of serpentinites file name [Q]
+MAGSUS_FILE: "Magsus_Serpentinite.csv"  # Magnetic susceptibility file name [Q]
 
 SAVE_SVG: true # Save SVG copies of plots alongside PNG outputs [IQ]
 
