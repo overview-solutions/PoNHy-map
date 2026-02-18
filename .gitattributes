@@ -1,2 +1,0 @@
-Data/Temperature_model_new.csv filter=lfs diff=lfs merge=lfs -text
-Data_Pyrenees/Temperature_model_new.csv filter=lfs diff=lfs merge=lfs -text
