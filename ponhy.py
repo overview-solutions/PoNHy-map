@@ -206,7 +206,16 @@ def _discover_data_dirs(root: str) -> List[str]:
 def _select_data_dir(root: str) -> Optional[str]:
     candidates = _discover_data_dirs(root)
     if not candidates:
-        return None
+        if not sys.stdin.isatty():
+            return None
+        print("\n[PoNHy] No Data folders found.")
+        while True:
+            manual = input("Enter Data folder path (or leave blank to cancel): ").strip()
+            if not manual:
+                return None
+            if os.path.isdir(manual):
+                return manual
+            print("Invalid path. Try again.")
     if len(candidates) == 1:
         return candidates[0]
 
