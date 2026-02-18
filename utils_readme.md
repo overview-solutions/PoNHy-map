@@ -19,6 +19,7 @@ This document explains the `utils/` modules used by `ponhy.py`: what each module
 
 **Key stages inside `ponhy.py`:**
 1. **Config loading**: `load_config(...)` parses YAML → a `Config` dataclass. This centralizes defaults and ensures required keys are present.
+2. **Base/data resolution**: after loading the YAML, `ponhy.py` resolves `BASE_DIR` (auto or hardcoded), then finds `Data*` folders (case-insensitive) and prompts you to select one when multiple exist. Filenames in the YAML are resolved inside that folder; absolute paths and `BASE_DIR`-relative paths are also supported.
 2. **Inversion** (if `RUN_INVERSION=true`):
   - Build mesh and load data from the paths in the config.
   - Run PGI inversion (SimPEG) to estimate density and magnetic susceptibility.
@@ -102,8 +103,8 @@ This module is the “toolbox.” Anything that is reused across MC sampling, re
 
 **Key functions:**
 - `_resolve_base_dir_path(base_dir, path)`
-  - Resolves inputs such as `"/Data/…"` by prefixing `BASE_DIR` when needed.
-  - This lets YAML use short paths while still allowing absolute paths.
+  - Resolves inputs relative to `BASE_DIR` when needed (legacy helper used in some modules).
+  - `ponhy.py` now also supports filename-only paths resolved inside the selected `Data*` folder.
 - `_normalize_unit_parameters(labels, dens_adj, magsus, dens_disp, magsus_disp, weights)`
   - Validates that all unit lists have the same length.
   - Normalizes weights to sum to 1 and returns NumPy arrays for downstream math.

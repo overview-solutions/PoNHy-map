@@ -37,7 +37,7 @@ The script expects a topography file with $(X, Y, Z)$ columns. You can pass the 
 python Temperature_Calculation.py /path/to/Ext_Topo.txt
 ```
 
-If no argument is provided, it uses the default path defined inside the script.
+If no argument is provided, it searches for folders starting with `Data`/`data` (case-insensitive) near the project and prompts you to select one. It then looks for `Ext_Topo.txt` or `Ext_Topo.csv` inside the selected folder.
 
 ## Configurations
 
@@ -45,22 +45,20 @@ The same script runs for both regions; you only need to switch the configuration
 
 ### Pyrenees (default)
 
-The script is currently configured for the Pyrenees by default:
+The script uses the Pyrenees parameters by default:
 
-- `default_dir_path`: `/path/to/Data_Pyrenees/Ext_Topo.txt`
 - `temp_sup`: `15.0` °C
 - `heat_flow`: `0.075` W/m²
 - `dz_uniform`: `50.0` m
 - `intervals`: `[(0, 10), (10, 5000), (5000, 15000), (15000, max_depth)]`
 - `conductivity_values`: `[1.1, 2.50, 3.00, 3.50, 4.00]`
 
-Run with the default Pyrenees data (no argument) or pass the Pyrenees topo file explicitly.
+Run with the Pyrenees topo file by selecting the Pyrenees `Data*` folder, or pass the topo file explicitly.
 
 ### California
 
-To run a California model, use the following configuration (from the California setup you provided):
+To run a California model, update the thermal parameters in the script (or keep them configurable in code) and select the California `Data*` folder (or pass the topo file path explicitly):
 
-- `default_dir_path`: `/path/to/California/Data_Big/Topo_Big.csv`
 - `max_depth`: `30000 + max_elevation`
 - `temp_sup`: `15.0` °C
 - `heat_flow`: `0.095` W/m²
@@ -68,17 +66,16 @@ To run a California model, use the following configuration (from the California 
 - `intervals`: `[(0, 10), (10, 5000), (5000, 15000), (15000, max_depth)]`
 - `conductivity_values`: `[1.1, 2.50, 3.00, 3.50, 4.00]`
 
-Update these values in the script (or pass the California topo file as a CLI argument if you prefer not to edit `default_dir_path`).
-
 ### Outputs
 
 An `Ext_Data` directory is created next to the input file with:
 
 - `thermal_conductivity_profile.png`: conductivity profile vs depth.
 - `temperature_profile_with_uncertainty.png`: mean temperature profile with uncertainty band.
-- `Temperature_model_new.csv`: exported temperatures by $(X, Y, Z)$.
+- `Temperature_model_new.csv`: exported temperatures by $(X, Y, Z)$ (you can change the filename when prompted).
 
 ## Notes
 
 - Adjust `temp_sup`, `heat_flow`, `dz_uniform`, and the conductivity intervals inside the script for alternate scenarios.
 - The number of simulations is controlled by `n_simulations`.
+- When run interactively, the script asks whether to generate plots and lets you rename the output CSV.
