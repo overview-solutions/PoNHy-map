@@ -1122,6 +1122,11 @@ if run_h2_quantification:
     )
     missing_quant = [name for name in QUANT_PARAM_NAMES if _is_missing(quant_inputs.get(name))]
 
+    if run_inversion:
+        for name in ["density_file", "magsus_file"]:
+            if name in missing_quant:
+                missing_quant.remove(name)
+
     if not run_montecarlo_fault:
         for name in ["fault_mc_n_iter", "flow_target_fracture_config"]:
             if name in missing_quant:
