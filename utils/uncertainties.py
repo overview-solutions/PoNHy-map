@@ -1286,6 +1286,8 @@ def analyze_limiting_factors_by_flow_target(
             )
             std_total_report = std_total_mc
 
+            daily_turnover_pct = 100.0 / turnover_days_total if math.isfinite(turnover_days_total) and turnover_days_total > 0 else float("nan")
+
             flow_stats[float(ft)] = {
                 "total_tons_sat": total_tons_sat,
                 "std_total": std_total_report,
@@ -1297,6 +1299,7 @@ def analyze_limiting_factors_by_flow_target(
                 "total_flow_L_day": float(ft),
                 "Conc [mol/kg]": raw_total_mol_per_kg,
                 "pore_volume_turnover_days": turnover_days_total,
+                "daily_turnover_pct": daily_turnover_pct,
                 "pore_volume_mean_days_ranges": mean_turnover_days,
                 "pore_saturation_time_days": mean_sat_time_days,
                 "dt_day_used_mean": avg_dt_used if math.isfinite(avg_dt_used) else dt_for_flow,
@@ -1311,6 +1314,7 @@ def analyze_limiting_factors_by_flow_target(
                 "Conc [mol/kg]": raw_total_mol_per_kg,
                 "Sat time [days]": mean_sat_time_days,
                 "Turnover [days]": turnover_days_total,
+                "Turnover [%/day]": daily_turnover_pct,
                 "dt [day]": avg_dt_used if math.isfinite(avg_dt_used) else dt_for_flow,
             })
             if pbar is not None:
@@ -1327,17 +1331,17 @@ def analyze_limiting_factors_by_flow_target(
         print("\nSummary of H₂ total per flow target:")
         header_fmt = (
             "{flow:<13} {iters:>5} {total_flow:>15} {h2tot:>12} {std:>10} "
-            "{conc:>12} {sat_time:>12} {turn:>12} {dt:>9} {limit:>7}"
+            "{conc:>12} {sat_time:>12} {turn:>12} {recambio:>15} {dt:>9} {limit:>7}"
         )
         header_line = header_fmt.format(
             flow="Flow", iters="Iter", total_flow="Total flow",
             h2tot="H₂ total", std="Std", conc="Conc",
-            sat_time="SatTime", turn="Turnover", dt="dt", limit="Limit"
+            sat_time="SatTime", turn="Turnover days", recambio="Turnover", dt="dt", limit="Limit"
         )
         units_line = header_fmt.format(
             flow="[L/day]", iters="[-]", total_flow="[L/day]",
             h2tot="[tons]", std="[tons]", conc="[mol/kg]",
-            sat_time="[days]", turn="[days]", dt="[day]", limit=""
+            sat_time="[days]", turn="[days]", recambio="[%/day]", dt="[day]", limit=""
         )
         dash_len = max(len(header_line), len(units_line))
         print("-" * dash_len)
@@ -1358,8 +1362,8 @@ def analyze_limiting_factors_by_flow_target(
             if not seen_non_water and math.isfinite(total_tons_for_flow) and total_tons_for_flow < 10.0:
                 limit_label = "water"
             elif math.isfinite(sat_time_days) and math.isfinite(turnover_days):
-                limit_label = "sol" if sat_time_days < turnover_days else "rate"
-                if limit_label in ("sol", "rate"):
+                limit_label = "sat" if sat_time_days < turnover_days else "rate"
+                if limit_label in ("sat", "rate"):
                     seen_non_water = True
             else:
                 limit_label = "-"
@@ -1374,6 +1378,7 @@ def analyze_limiting_factors_by_flow_target(
                     conc=f"{stats_ft.get('Conc [mol/kg]', stats_ft.get('avg_concentration_total_mol_kg', 0.0)):.4f}",
                     sat_time=f"{stats_ft.get('pore_saturation_time_days', float('nan')):.2f}",
                     turn=f"{stats_ft.get('pore_volume_turnover_days', float('nan')):.2f}",
+                    recambio=f"{stats_ft.get('daily_turnover_pct', float('nan')):.2f}",
                     dt=f"{stats_ft.get('dt_day_used_mean', float('nan')):.4f}",
                     limit=limit_label,
                 )
@@ -1388,8 +1393,9 @@ def analyze_limiting_factors_by_flow_target(
             "Std: standard deviation of H₂ total (tons).",
             "Conc: dissolved H₂ concentration per kg of delivered water (mol/kg).",
             "SatTime: days until the pore water reaches 99% average saturation.",
-            "Turnover: bulk pore-volume turnover time (days).",
-            "Limit: dominant limiting factor (water / sol / rate / -).",
+            "Turnover days: bulk pore-volume turnover time (days).",
+            "Turnover [%/day]: percentage of pore water replaced per day.",
+            "Limit: dominant limiting factor (water / sat / rate / -).",
             "dt [day]: Mean integration timestep used during the Monte Carlo runs for that flow target.",
         ]
         for desc in col_meanings:
@@ -1422,7 +1428,7 @@ def analyze_limiting_factors_by_flow_target(
             turnover_plot.append(stats_ft.get("pore_volume_turnover_days", float("nan")))
             sat_time_plot.append(stats_ft.get("pore_saturation_time_days", float("nan")))
 
-        colors = {"water": "green", "rate": "blue", "sol": "red", "-": "gray"}
+        colors = {"water": "green", "rate": "blue", "sat": "red", "-": "gray"}
 
         for factor, color in colors.items():
             idxs = [i for i, f in enumerate(factor_plot) if f == factor]
@@ -1496,7 +1502,7 @@ def analyze_limiting_factors_by_flow_target(
                 "H2 total [tons]: Mean total H₂ produced over the reporting period (includes solubility cap).",
                 "Std total [tons]: Standard deviation of total H₂ across Monte Carlo iterations.",
                 "Efficiency [%]: Percent of the no-saturation total achieved (uses outer run total when available).",
-                "Limiting factor: Dominant limiting factor across ranges (water / sol / rate / -).",
+                "Limiting factor: Dominant limiting factor across ranges (water / sat / rate / -).",
                 "Iterations: Monte Carlo iterations effectively used for this flow target.",
                 "Conc [mol/kg]: Dissolved H₂ concentration per kg of delivered water (excluding free gas).",
                 "Sat time [days]: Time required for pore water to reach 99% average saturation.",

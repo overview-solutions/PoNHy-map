@@ -785,9 +785,11 @@ def plot_h2_production_summary(
         markersize=8,
         label="H₂ Production",
     )
+    finite_bar_values = [v for v in bar_values if np.isfinite(v)]
+    max_bar_val = max(finite_bar_values) if finite_bar_values else 0.0
     for x, v, err in zip(mid_temps, bar_values, std_values):
-        if v > 0:
-            offset = (max(bar_values) * 0.01) if bar_values else 0.0
+        if v > 0 and np.isfinite(v) and np.isfinite(err) and np.isfinite(x) and max_bar_val > 0:
+            offset = max_bar_val * 0.01
             ax1.text(x, v + offset + err, f"{v:.0f}", ha="center", va="bottom", fontsize=8)
     ax1.set_ylabel("H₂ Production (tons/yr)")
     ax1.set_title(f"H₂ Production over {years} Year(s) with Saturation")
@@ -832,9 +834,11 @@ def plot_h2_production_summary(
     vols = [float(volume_at_temperature.get(tr, 0)) for tr in temp_bins]
     bar_colors = [cmap(norm(t_val)) for t_val in mid_temps]
     ax2.bar(mid_temps, vols, width=width * 3, color=bar_colors, edgecolor="black", linewidth=0.8, alpha=0.7)
+    finite_vols = [v for v in vols if np.isfinite(v)]
+    max_vol = max(finite_vols) if finite_vols else 0.0
     for x, v in zip(mid_temps, vols):
-        if vols:
-            ax2.text(x, v + max(vols) * 0.01, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
+        if np.isfinite(v) and max_vol > 0:
+            ax2.text(x, v + max_vol * 0.01, f"{v:.2f}", ha="center", va="bottom", fontsize=8)
 
     ax2.set_ylabel("Volume (km³)")
     ax2.set_xlabel("Temperature Range (°C)")

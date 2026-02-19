@@ -725,8 +725,6 @@ def _run_range_time_integration(setup, days, dt_day=1 / 2500, use_equilibrium=Tr
     ts_sat = []
     eq_prod_days = []
     stable_meta = {}
-    saturation_threshold = 0.99
-    pore_saturation_time_days = None
 
     if not use_equilibrium:
         main_days = days
@@ -816,16 +814,12 @@ def _run_range_time_integration(setup, days, dt_day=1 / 2500, use_equilibrium=Tr
             h2o_parcel_water_mass_kg = min(h2o_parcel_water_mass_kg, h2o_pore_mass_kg_day)
 
             if max_capacity_kg > 0:
-                h2_saturation_fraction = min(1.0, h2o_parcel_water_mass_kg / max_capacity_kg)
+                water_fill_fraction = min(1.0, h2o_parcel_water_mass_kg / max_capacity_kg)
             else:
-                h2_saturation_fraction = 0.0
-
-            if pore_saturation_time_days is None and h2_saturation_fraction >= saturation_threshold:
-                pore_saturation_time_days = day + (step + 1) * dt_sub
+                water_fill_fraction = 0.0
 
             if can_produce_h2 and h2o_parcel_water_mass_kg > 0.0 and max_capacity_kg > 0.0:
-                frac_of_ref_water = h2o_parcel_water_mass_kg / max_capacity_kg
-                frac_of_ref_water = min(frac_of_ref_water, 1.0)
+                frac_of_ref_water = water_fill_fraction
 
                 potential_h2_mol = max_prod_mol_day * dt_sub * frac_of_ref_water
                 capacity_h2_mol = chem_unsat * solubility * h2o_parcel_water_mass_kg
@@ -836,7 +830,6 @@ def _run_range_time_integration(setup, days, dt_day=1 / 2500, use_equilibrium=Tr
                 else:
                     added_sat = 0.0
                 h2_saturation_fraction = min(1.0, h2_saturation_fraction + added_sat)
-
                 h2_total_capacity_limit_mol += capacity_h2_mol
             else:
                 h2_generated_mol = 0.0
@@ -887,6 +880,49 @@ def _run_range_time_integration(setup, days, dt_day=1 / 2500, use_equilibrium=Tr
     else:
         final_avg_daily_saturation = 0.0
 
+    # Calculate theoretical saturation time and limiter
+    h2_total_tons = h2_total_prod_mol * 2.016 / 1e6
+    h2_dissolved_tons = h2_total_dissolved_mol * 2.016 / 1e6
+    h2_gaseous_tons = h2_total_tons - h2_dissolved_tons
+    total_water_delivered_kg = h2o_total_diffused_kg
+    sat_mol_per_kg = (
+        h2_total_dissolved_mol / max(total_water_delivered_kg, 1e-12) if total_water_delivered_kg > 0 else 0.0
+    )
+
+    pore_volume_from_mass_m3 = setup.get("pore_volume_for_sat_m3", pore_volume_m3)
+    pore_volume_for_sat = (
+        pore_volume_from_mass_m3
+        if np.isfinite(pore_volume_from_mass_m3) and pore_volume_from_mass_m3 > 0
+        else pore_volume_m3
+    )
+    if not (np.isfinite(pore_volume_for_sat) and pore_volume_for_sat > 0):
+        pore_volume_for_sat = pore_volume_m3
+
+    pore_water_mass_kg = pore_volume_for_sat * rho_water if np.isfinite(pore_volume_for_sat) else float("nan")
+    daily_dissolved_mol = h2_total_dissolved_mol / max(eq_days_count, 1) if eq_days_count > 0 else float("nan")
+
+    pore_saturation_time_days = float("nan")
+    if (
+        np.isfinite(solubility)
+        and np.isfinite(pore_water_mass_kg)
+        and pore_water_mass_kg > 0
+        and np.isfinite(daily_dissolved_mol)
+        and daily_dissolved_mol > 1e-9
+    ):
+        pore_saturation_time_days = (solubility * pore_water_mass_kg) / daily_dissolved_mol
+
+    water_limited_threshold_tons = 10.0
+
+    if h2_total_tons == 0.0:
+        limiter = "-"
+    elif h2_total_tons < water_limited_threshold_tons:
+        limiter = "water"
+    else:
+        if np.isfinite(pore_saturation_time_days) and np.isfinite(pore_volume_turnover_days):
+            limiter = "sat" if pore_saturation_time_days < pore_volume_turnover_days else "rate"
+        else:
+            limiter = "-"
+
     return dict(
         H2_total_prod_mol=h2_total_prod_mol,
         H2_total_dissolved_mol=h2_total_dissolved_mol,
@@ -906,7 +942,7 @@ def _run_range_time_integration(setup, days, dt_day=1 / 2500, use_equilibrium=Tr
         dt_day=dt_day,
         pore_volume_m3=pore_volume_m3,
         pore_volume_turnover_days=pore_volume_turnover_days,
-        pore_saturation_time_days=float(pore_saturation_time_days) if pore_saturation_time_days is not None else float("nan"),
+        pore_saturation_time_days=pore_saturation_time_days,
         timeseries={
             "H2_prod_mol_day": stable_meta.get("smoothed", _moving_average(_trim_trailing_dropoff(ts_prod))),
             "H2_prod_mol_day_full": ts_prod,
@@ -977,9 +1013,7 @@ def _build_saturation_range_result_row(setup, sim, years, kg_rocks_dict):
     daily_dissolved_mol = h2_total_dissolved_mol / max(eq_days_count, 1) if eq_days_count > 0 else float("nan")
 
     pore_saturation_time_days = float("nan")
-    if np.isfinite(pore_saturation_time_sim) and pore_saturation_time_sim > 0:
-        pore_saturation_time_days = pore_saturation_time_sim
-    elif (
+    if (
         np.isfinite(solubility)
         and np.isfinite(pore_water_mass_kg)
         and pore_water_mass_kg > 0
@@ -988,17 +1022,10 @@ def _build_saturation_range_result_row(setup, sim, years, kg_rocks_dict):
     ):
         pore_saturation_time_days = (solubility * pore_water_mass_kg) / daily_dissolved_mol
 
-    water_limited_threshold_tons = 10.0
-
-    if h2_total_tons == 0.0:
-        limiter = "-"
-    elif h2_total_tons < water_limited_threshold_tons:
-        limiter = "water"
+    if np.isfinite(pore_saturation_time_days) and np.isfinite(pore_volume_turnover_days):
+        limiter = "sat" if pore_saturation_time_days < pore_volume_turnover_days else "rate"
     else:
-        if np.isfinite(pore_saturation_time_days) and np.isfinite(pore_volume_turnover_days):
-            limiter = "sol" if pore_saturation_time_days < pore_volume_turnover_days else "rate"
-        else:
-            limiter = "-"
+        limiter = "-"
 
     rocks_kg_day = 0.0
     if kg_rocks_dict is not None and h2_efficiency_percent is not None:

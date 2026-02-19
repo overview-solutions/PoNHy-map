@@ -115,8 +115,8 @@ z_csv = topo_xyz[:, 2]
 max_elevation = z_csv.max()
 max_depth = 20000 + max_elevation
 
-temp_sup = 15.0  # Surface temperature in Celsius degrees
-heat_flow = 0.075  # Background heat flow in W/m² obtained from the International Heat Flow Database
+temp_sup = 10.0  # Surface temperature in Celsius degrees
+heat_flow = 0.070  # Background heat flow in W/m² obtained from the International Heat Flow Database
 
 dz_uniform = 50.0 # Cell size
 nz = int(max_depth // dz_uniform)  # Number of cells

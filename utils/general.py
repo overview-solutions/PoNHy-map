@@ -499,12 +499,20 @@ def plot_serpentinization_heatmap(
     ax.set_xlabel("Density [g/cc]")
     ax.set_ylabel("Magnetic Susceptibility [SI]")
     ax.set_title("Overall Serpentinization Degree based on geophysical inversion")
-    ax.scatter([mode_density], [mode_magsus], color="red", zorder=2, label="Mode Density & Magsus")
+    if np.isfinite(mode_density) and np.isfinite(mode_magsus):
+        ax.scatter([mode_density], [mode_magsus], color="red", zorder=2, label="Mode Density & Magsus")
 
-    ax.plot(x_points, y_points, "-o", color="black", markersize=2)
-    for x_val, y_val, value in zip(x_points, y_points, values):
-        if value % 10 == 0:
-            ax.text(x_val + 0.01, y_val + 0.00005, f"{value}", color="black", ha="center", va="bottom")
+    valid_points = [
+        (x_val, y_val, value)
+        for x_val, y_val, value in zip(x_points, y_points, values)
+        if np.isfinite(x_val) and np.isfinite(y_val)
+    ]
+    if valid_points:
+        x_vals, y_vals, v_vals = zip(*valid_points)
+        ax.plot(x_vals, y_vals, "-o", color="black", markersize=2)
+        for x_val, y_val, value in valid_points:
+            if np.isfinite(value) and value % 10 == 0:
+                ax.text(x_val + 0.01, y_val + 0.00005, f"{value}", color="black", ha="center", va="bottom")
 
     file_name_png = os.path.join(results_path, "serpentinization_heat_map.png")
     file_name_svg = os.path.join(results_path, "serpentinization_heat_map.svg")
