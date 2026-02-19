@@ -35,7 +35,7 @@ BACKGROUND_SUSC: 1e-4  # Used when USE_INITIAL_MODEL = False [I]
 
 # H2 quantification paths (used when RUN_H2_QUANTIFICATION=True)
 DB_DIR: "DB0"  # H2 database folder name [Q]
-TEMPERATURE_FILE: "Temperature_model_new.csv"  # Temperature file name [Q]
+TEMPERATURE_FILE: "temperature_70.csv"  # Temperature file name [Q]
 DENSITY_FILE: "Density_Serpentinite.csv"  # Density of serpentinites file name [Q] (optional if RUN_INVERSION=True)
 MAGSUS_FILE: "Magsus_Serpentinite.csv"  # Magnetic susceptibility file name [Q] (optional if RUN_INVERSION=True)
 
