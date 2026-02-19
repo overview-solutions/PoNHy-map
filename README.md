@@ -135,6 +135,7 @@ Results_GenerationYYYYMMDD_HHMMSS/
 - If you run both routines, the inversion outputs are reused in the H₂ stage.
 - If you set `RUN_INVERSION: false`, only the H₂ quantification runs (you still need the serpentinite inputs).
 - If you set `RUN_H2_QUANTIFICATION: false`, only the inversion runs.
+- With the current configuration, gravity, magnetic, and topography points must align on the same grid with no gaps. You can generate a common point set and sample each dataset onto it to ensure coverage.
 
 ### Reproducibility
 
