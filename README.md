@@ -9,6 +9,11 @@ Everything is driven from `ponhy.py` and an editable configuration file.
 
 ---
 
+## Runtime note (important)
+
+This workflow is **computationally expensive**. A full run (inversion + H₂ quantification + Monte Carlo) can take **hours** depending on the machine and settings.
+To speed things up, you can **disable components** in the YAML configuration (for example, set `RUN_INVERSION` or `RUN_H2_QUANTIFICATION` to `false`, or skip the univariate/MC sweeps).
+
 ## What this code does (high level)
 
 - Loads topography, gravity, magnetic data, and an optional initial model.
