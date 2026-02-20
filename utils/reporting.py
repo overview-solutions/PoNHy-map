@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+import matplotlib
 from matplotlib import pyplot as plt
 
 from utils.config import (
@@ -19,6 +20,9 @@ from utils.config import (
     SerpentinizationSummaryParams,
     WaterFlowSerpentinizationParams,
 )
+
+# Keep SVG text as editable text (not paths).
+matplotlib.rcParams["svg.fonttype"] = "none"
 from utils.general import build_thermo_lookup_by_range
 from utils.helpers import _as_scalar_value
 

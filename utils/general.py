@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 import numpy as np
 import pandas as pd
 import xarray as xr
+import matplotlib
 from matplotlib import pyplot as plt
 from scipy.stats import gaussian_kde
 
@@ -17,6 +18,9 @@ from utils.config import (
     SerpentinizationFrontVelocityParams,
     ThermoLookupParams,
 )
+
+# Keep SVG text as editable text (not paths).
+matplotlib.rcParams["svg.fonttype"] = "none"
 
 
 def load_h2_production_database(dsn_db, rock_codes=None, ftype="zarr"):

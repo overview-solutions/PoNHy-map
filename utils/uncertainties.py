@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 import pandas as pd
+import matplotlib
 from matplotlib import pyplot as plt
 from tqdm import tqdm
 
@@ -24,6 +25,9 @@ from utils.plotting import _save_plot_pair, get_plot_save_svg
 from utils.reporting import save_mc_convergence_sweep_report
 from utils.config import FlowTargetLimitingFactorsParams
 from utils.saturation import run_saturation_monte_carlo
+
+# Keep SVG text as editable text (not paths).
+matplotlib.rcParams["svg.fonttype"] = "none"
 
 
 # ======================================================== Fracture Monte Carlo ========================================================
@@ -1416,6 +1420,7 @@ def analyze_limiting_factors_by_flow_target(
         factor_plot = []
         turnover_plot = []
         sat_time_plot = []
+        conc_plot = []
         for ft in sorted(flow_stats.keys()):
             stats_ft = flow_stats[ft]
             mean_val = stats_ft["total_tons_sat"]
@@ -1427,6 +1432,7 @@ def analyze_limiting_factors_by_flow_target(
             factor_plot.append(stats_ft["limiting_factor"])
             turnover_plot.append(stats_ft.get("pore_volume_turnover_days", float("nan")))
             sat_time_plot.append(stats_ft.get("pore_saturation_time_days", float("nan")))
+            conc_plot.append(stats_ft.get("Conc [mol/kg]", float("nan")))
 
         colors = {"water": "green", "rate": "blue", "sat": "red", "-": "gray"}
 
@@ -1451,40 +1457,41 @@ def analyze_limiting_factors_by_flow_target(
         flows_arr = np.asarray(flows_plot, dtype=float)
         turnover_arr = np.asarray(turnover_plot, dtype=float)
         sat_time_arr = np.asarray(sat_time_plot, dtype=float)
+        conc_arr = np.asarray(conc_plot, dtype=float)
 
-        mask_turnover = np.isfinite(turnover_arr) & (turnover_arr > 0)
-        mask_sat = np.isfinite(sat_time_arr) & (sat_time_arr > 0)
+        ratio_arr = turnover_arr / sat_time_arr
+        mask_ratio = np.isfinite(ratio_arr) & (ratio_arr > 0)
+        mask_conc = np.isfinite(conc_arr) & (conc_arr > 0)
 
-        if mask_turnover.any():
+        if mask_ratio.any():
             ax2.plot(
-                flows_arr[mask_turnover],
-                turnover_arr[mask_turnover],
+                flows_arr[mask_ratio],
+                ratio_arr[mask_ratio],
                 color="tab:purple",
                 marker="o",
                 linestyle="-",
-                label="Turnover [days]",
+                label="Turnover / SatTime",
             )
 
-        if mask_sat.any():
-            ax2.plot(
-                flows_arr[mask_sat],
-                sat_time_arr[mask_sat],
+        ax2.set_ylabel("Turnover / SatTime [-]")
+        ax2.set_xlabel("Flow Target [L/day]")
+        ax2.grid(True, which="both", alpha=0.3)
+        ax2_right = ax2.twinx()
+        if mask_conc.any():
+            ax2_right.plot(
+                flows_arr[mask_conc],
+                conc_arr[mask_conc],
                 color="tab:orange",
                 marker="s",
                 linestyle="--",
-                label="Sat time [days]",
+                label="Conc [mol/kg]",
             )
+        ax2_right.set_ylabel("Conc [mol/kg]")
 
-        ax2.set_ylabel("Turnover / Sat time [days]")
-        ax2.set_xlabel("Flow Target [L/day]")
-        ax2.grid(True, which="both", alpha=0.3)
-        if mask_turnover.any() or mask_sat.any():
-            ax2.legend(loc="best")
-
-        ax2.set_xscale("log")
-        if (mask_turnover.any() and np.ptp(np.log10(turnover_arr[mask_turnover])) > 0.5) or \
-           (mask_sat.any() and np.ptp(np.log10(sat_time_arr[mask_sat])) > 0.5):
-            ax2.set_yscale("log")
+        handles_left, labels_left = ax2.get_legend_handles_labels()
+        handles_right, labels_right = ax2_right.get_legend_handles_labels()
+        if handles_left or handles_right:
+            ax2.legend(handles_left + handles_right, labels_left + labels_right, loc="best")
 
         fig.tight_layout()
 

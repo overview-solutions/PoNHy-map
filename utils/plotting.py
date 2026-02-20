@@ -18,6 +18,9 @@ from utils.helpers import _format_value_for_filename, _moving_average, _select_s
 
 _SAVE_SVG: bool = True
 
+# Keep SVG text as editable text (not paths).
+matplotlib.rcParams["svg.fonttype"] = "none"
+
 
 def set_plot_save_svg(enabled: bool) -> None:
     """Enable or disable saving SVG files for plot outputs."""

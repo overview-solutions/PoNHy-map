@@ -17,6 +17,7 @@ from typing import (
     Tuple,
     cast,
 )
+import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -79,6 +80,9 @@ from utils.plotting import (
     set_plot_save_svg,
 )
 from utils.logging import CustomPrint, log_info
+
+# Keep SVG text as editable text (not paths).
+matplotlib.rcParams["svg.fonttype"] = "none"
 from utils.reporting import (
     print_fracture_monte_carlo_report,
     print_inversion_config_summary,
