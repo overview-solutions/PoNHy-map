@@ -79,8 +79,8 @@
       document.getElementById('file-protocol-msg').classList.add('visible');
     }
 
-    // Replace with your own token from https://account.mapbox.com/access-tokens/ (do not commit real tokens)
-    const MAPBOX_TOKEN = 'YOUR_MAPBOX_ACCESS_TOKEN';
+    // Token injected by GitHub Actions from repo secret MAPBOX_ACCESS_TOKEN; locally replace __MAPBOX_TOKEN__ with your own.
+    const MAPBOX_TOKEN = '__MAPBOX_TOKEN__';
     mapboxgl.accessToken = MAPBOX_TOKEN;
 
     // Map view: change these to look at another region (data files stay the same).

@@ -9,7 +9,7 @@ This repo is a fork of [RodolfoChristiansen/PoNHy](https://github.com/RodolfoChr
 - **Stability:** `ponhy_config_light.yaml` for lighter runs (fewer iterations, 1 core, optional analyses off); README notes on avoiding overload.
 - **Paths & config:** Absolute paths in config are left unchanged; clearer errors when the chosen Data folder doesn’t match the config (e.g. Pyrenees config → Data_Pyrenees).
 - **Non-interactive:** When multiple Data folders exist and stdin isn’t a TTY, the first Data folder is used automatically.
-- **GeoJSON & map:** `export_to_geojson.py` converts result CSVs (or topo/gravity inputs) to WGS84 GeoJSON (points, `--polygons`, `--value-ranges`); `mapbox_map.html` loads density/gravity/topography polygon layers (serve via a local HTTP server; set your own Mapbox token in the HTML).
+- **GeoJSON & map:** `export_to_geojson.py` converts result CSVs (or topo/gravity inputs) to WGS84 GeoJSON (points, `--polygons`, `--value-ranges`); `index.html` (and `mapbox_map.html`) load density/gravity/topography polygon layers. For **GitHub Pages**: add a repo secret `MAPBOX_ACCESS_TOKEN` with your Mapbox token, set Pages source to **GitHub Actions**, and push; the workflow injects the token at deploy time so it is never committed.
 
 For full documentation (quick start, environment, configuration, troubleshooting, contact), see **[README_original.md](README_original.md)**.
 
