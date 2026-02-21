@@ -354,7 +354,7 @@ def _format_value_for_filename(val: float) -> str:
 
 
 def _resolve_base_dir_path(base_dir: str, path: Optional[str]) -> Optional[str]:
-    """Resolve a path relative to base_dir, treating /Data/... as base_dir/Data/... when needed."""
+    """Resolve a path relative to base_dir. If path is already absolute, return it unchanged."""
     if path is None:
         return None
     if not isinstance(path, str):
@@ -362,11 +362,6 @@ def _resolve_base_dir_path(base_dir: str, path: Optional[str]) -> Optional[str]:
     if not base_dir:
         return path
     if os.path.isabs(path):
-        candidate = os.path.join(base_dir, path.lstrip(os.sep))
-        if os.path.exists(candidate) and not os.path.exists(path):
-            return candidate
-        if path.startswith(os.sep) and not os.path.exists(path):
-            return candidate
         return path
     return os.path.join(base_dir, path)
 

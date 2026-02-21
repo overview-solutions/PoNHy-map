@@ -1,0 +1,132 @@
+
+======================================================================================================================================================
+                                                          1. INVERSION CONFIGURATION SUMMARY                                                          
+======================================================================================================================================================
+
+------------------------------------------------------------- Topography and Data Files --------------------------------------------------------------
+Topography file                              : /Users/adamsauer/Documents/GitHub/H2/PoNHy/Data_Pyrenees/Ext_Topo.txt
+Gravity data file                            : /Users/adamsauer/Documents/GitHub/H2/PoNHy/Data_Pyrenees/Ext_Grav.txt
+Magnetic data file                           : /Users/adamsauer/Documents/GitHub/H2/PoNHy/Data_Pyrenees/Ext_Mag_down.txt
+
+------------------------------------------------------------------- Survey Details -------------------------------------------------------------------
+Gravity receiver components                  : ['gz']
+Magnetic receiver components                 : ['tmi']
+Magnetic field strength [nT]                 : 45000.0
+Inclination / Declination [°]                : 90.0, 0.0
+
+------------------------------------------------------------------ Mesh Parameters -------------------------------------------------------------------
+Mesh dimensions (nx, ny, nz)                 : (125, 76, 43)
+Total extent (X, Y, Z) [m]                   : (93750.00, 57000.00, 21500.00)
+Core cell size (dx, dy, dz) [m]              : (750.00, 750.00, 500.00)
+
+------------------------------------------------------------------ Model Parameters ------------------------------------------------------------------
+Initial model                                : Used
+Initial model file                           : /Users/adamsauer/Documents/GitHub/H2/PoNHy/Data_Pyrenees/Updated_Geology_Pyrenees.csv
+
+------------------------------------------------------------------- Uncertainties --------------------------------------------------------------------
+Gravity uncertainty [%] / abs [mGal]         : 2.00% = 0.98
+Magnetic uncertainty [%] / abs [nT]          : 2.00% = 2.98385
+
+------------------------------------------------------ Gaussian Mixture Model (GMM) Parameters -------------------------------------------------------
+---------------------------------------------------------- Physical property means per unit ----------------------------------------------------------
+  · Crust                -> Density: 2.60 g/cc, Susceptibility: 0.00100 SI
+  · Serpentinite         -> Density: 2.85 g/cc, Susceptibility: 0.03000 SI
+  · Mantle               -> Density: 3.05 g/cc, Susceptibility: 0.00010 SI
+
+---------------------------------------------------------------- Dispersion per unit -----------------------------------------------------------------
+  · Crust                -> σ_density: 0.07, σ_susc: 0.00300
+  · Serpentinite         -> σ_density: 0.04, σ_susc: 0.00500
+  · Mantle               -> σ_density: 0.04, σ_susc: 0.00300
+
+----------------------------------------------------------- PGI Regularization Parameters ------------------------------------------------------------
+alpha_pgi                                    : 1.00
+alpha_x/y/z                                  : (1.00, 1.00, 1.00)
+alpha_xx/yy/zz                               : (0.00, 0.00, 0.00)
+
+---------------------------------------------------------------- Directive Parameters ----------------------------------------------------------------
+Alpha0 ratio                                 : [0.005 0.005 0.005 0.005 0.005 0.005 0.5   0.5   0.5   0.5   0.5   0.5  ]
+Beta estimate ratio                          : 1.00e-03
+Beta cooling factor                          : 1.25
+Beta tolerance                               : 0.50
+Target misfit tolerance                      : True
+MrefInSmooth wait till stable                : True
+Update GMM in smallness                      : False
+Scaling init chi0_ratio                      : [5.e-04 1.e+02]
+
+Running inversion with SimPEG v0.25.1
+Alpha scales: [np.float64(139493658.98582), np.float64(0.0), np.float64(136434932.2260263), np.float64(0.0), np.float64(106218231.59856075), np.float64(0.0), np.float64(13840599675.638353), np.float64(0.0), np.float64(13432296536.613289), np.float64(0.0), np.float64(11529860246.550714), np.float64(0.0)]
+<class 'simpeg.regularization.pgi.PGIsmallness'>
+Initial data misfit scales:  [0.15108615 0.84891385]
+================================================= Projected GNCG =================================================
+  #     beta     phi_d     phi_m       f      |proj(x-g)-x|  LS   iter_CG   CG |Ax-b|/|b|  CG |Ax-b|   Comment   
+-----------------------------------------------------------------------------------------------------------------
+   0  1.48e-09  7.86e+05  4.77e+13  8.57e+05                         0           inf          inf                
+   1  1.48e-09  3.74e+04  9.32e+12  5.11e+04    3.26e+02      0     100       5.48e-02     2.63e+05              
+geophys. misfits: 14730.0 (target 2856.0 [False]); 41418.8 (target 2856.0 [False]) | smallness misfit: 2263125.8 (target: 779504.0 [False])
+Beta cooling evaluation: progress: [14730.  41418.8]; minimum progress targets: [4284. 4284.]
+Decreasing beta to counter data misfit decrase plateau.
+mref changed in  164160  places
+   2  1.18e-09  4.06e+03  4.72e+12  9.63e+03    3.00e+02      0     100       4.05e-02     8.88e+04              
+geophys. misfits: 2835.3 (target 2856.0 [True]); 4276.6 (target 2856.0 [False]) | smallness misfit: 1078832.2 (target: 779504.0 [False])
+Updating scaling for data misfits by  1.0072915716402575
+New scales: [0.15015669 0.84984331]
+Beta cooling evaluation: progress: [2835.3 4276.6]; minimum progress targets: [4284. 4284.]
+Decreasing beta to counter data misfit decrase plateau.
+mref changed in  4170  places
+   3  9.45e-10  1.24e+03  4.11e+12  5.12e+03    1.55e+02      0     100       3.46e-02     2.60e+04              
+geophys. misfits: 2450.2 (target 2856.0 [True]); 1025.7 (target 2856.0 [True]) | smallness misfit: 988004.3 (target: 779504.0 [False])
+Beta cooling evaluation: progress: [2450.2 1025.7]; minimum progress targets: [4284. 4284.]
+Warming alpha_pgi to favor clustering:  1.9750172013783125
+mref changed in  2436  places
+   4  9.45e-10  9.97e+02  7.08e+12  7.69e+03    1.47e+02      0     100       3.79e-02     1.37e+04              
+geophys. misfits: 4280.3 (target 2856.0 [False]); 417.0 (target 2856.0 [True]) | smallness misfit: 857559.5 (target: 779504.0 [False])
+Updating scaling for data misfits by  6.849077233537711
+New scales: [0.54754127 0.45245873]
+Beta cooling evaluation: progress: [4280.3  417. ]; minimum progress targets: [4284. 4284.]
+mref changed in  747  places
+   5  9.45e-10  7.54e+02  7.87e+12  8.19e+03    3.77e+02      0     100       5.23e-02     6.38e+03              
+geophys. misfits: 1031.0 (target 2856.0 [True]); 419.3 (target 2856.0 [True]) | smallness misfit: 834838.0 (target: 779504.0 [False])
+Beta cooling evaluation: progress: [1031.   419.3]; minimum progress targets: [4284. 4284.]
+Warming alpha_pgi to favor clustering:  9.462339706879794
+mref changed in  684  places
+   6  9.45e-10  3.59e+03  3.06e+13  3.25e+04    3.22e+02      0     100       1.26e-01     1.39e+04              
+geophys. misfits: 4888.8 (target 2856.0 [False]); 2026.1 (target 2856.0 [True]) | smallness misfit: 756404.2 (target: 779504.0 [True])
+Updating scaling for data misfits by  1.409585860247297
+New scales: [0.63042424 0.36957576]
+Beta cooling evaluation: progress: [4888.8 2026.1]; minimum progress targets: [4284. 4284.]
+Decreasing beta to counter data misfit increase.
+mref changed in  1  places
+   7  7.56e-10  2.30e+03  3.16e+13  2.62e+04    3.13e+02      0     100       3.87e-02     8.44e+03              
+geophys. misfits: 3373.5 (target 2856.0 [False]); 457.0 (target 2856.0 [True]) | smallness misfit: 757945.9 (target: 779504.0 [True])
+Updating scaling for data misfits by  6.249724265844271
+New scales: [0.91424268 0.08575732]
+Beta cooling evaluation: progress: [3373.5  457. ]; minimum progress targets: [4284. 4284.]
+mref changed in  0  places
+   8  7.56e-10  2.11e+03  3.27e+13  2.68e+04    3.19e+02      0     100       1.65e-01     3.73e+03              
+geophys. misfits: 2218.1 (target 2856.0 [True]); 951.3 (target 2856.0 [True]) | smallness misfit: 764264.1 (target: 779504.0 [True])
+All targets have been reached
+Beta cooling evaluation: progress: [2218.1  951.3]; minimum progress targets: [4284. 4284.]
+Warming alpha_pgi to favor clustering:  20.295473279829427
+mref changed in  0  places
+Add mref to Smoothness. Changes in mref happened in 0.0 % of the cells
+------------------------- STOP! -------------------------
+1 : |fc-fOld| = 2.1666e+02 <= tolF*(1+|f0|) = 8.5698e+04
+1 : |xc-x_last| = 1.3594e+00 <= tolX*(1+|x0|) = 1.1950e+01
+0 : |proj(x-g)-x|    = 3.1930e+02 <= tolG          = 1.0000e-01
+0 : |proj(x-g)-x|    = 3.1930e+02 <= 1e3*eps       = 1.0000e-02
+0 : maxIter   =      25    <= iter          =      8
+------------------------- DONE! -------------------------
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                  Process completed                                                                   
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
+All main results have been saved:
+  • Density model:         /Users/adamsauer/Documents/GitHub/H2/PoNHy/Results_Inversion_20260221_093532/Density_complete_model.csv
+  • Magnetic susceptibility: /Users/adamsauer/Documents/GitHub/H2/PoNHy/Results_Inversion_20260221_093532/Magsus_complete_model.csv
+  • Geology model:         /Users/adamsauer/Documents/GitHub/H2/PoNHy/Results_Inversion_20260221_093532/Geology_complete_model.csv
+  • Serpentinite density:  /Users/adamsauer/Documents/GitHub/H2/PoNHy/Results_Inversion_20260221_093532/Density_Serpentinite.csv
+  • Serpentinite magsus:   /Users/adamsauer/Documents/GitHub/H2/PoNHy/Results_Inversion_20260221_093532/Magsus_Serpentinite.csv
+
+Execution time: 0:9:40
+Iterations: 8/25

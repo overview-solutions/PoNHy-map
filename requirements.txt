@@ -1,0 +1,18 @@
+# PoNHy - pip-installable dependencies (alternative to conda environment.yml)
+# Use with: python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# Requires Python 3.9+ (conda env uses 3.9; SimPEG stack supports 3.11+ for latest versions).
+
+packaging>=24
+numpy>=1.22
+scipy>=1.8
+pandas>=2.0
+xarray>=2023.7
+matplotlib>=3.3
+tqdm
+PyYAML>=6.0
+scikit-learn>=1.0
+discretize>=0.10
+simpeg>=0.22
+geoana>=0.6
+pyproj>=3.6
+shapely>=2.0

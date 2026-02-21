@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PoNHy – Pyrenees (Mapbox)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #map { width: 100%; height: 100%; }
+    #layer-list {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 1;
+    }
+    #layer-list h3 { margin: 0 0 8px 0; font-size: 14px; }
+    #layer-list label { display: block; margin: 4px 0; font-size: 13px; cursor: pointer; }
+    #layer-list input { margin-right: 8px; }
+    #file-protocol-msg {
+      display: none;
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 24px 32px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      z-index: 10;
+      max-width: 420px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    #file-protocol-msg.visible { display: block; }
+    #file-protocol-msg code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
+    #file-protocol-msg h3 { margin: 0 0 12px 0; color: #c0392b; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="file-protocol-msg" aria-live="polite">
+    <h3>Open via a local server</h3>
+    <p>This page was opened from disk (<code>file://</code>). Browsers block loading the GeoJSON files that way.</p>
+    <p>In a terminal, from the <strong>PoNHy-map</strong> folder, run:</p>
+    <p><code>python3 -m http.server 8080</code></p>
+    <p>Then open: <a href="http://localhost:8080/mapbox_map.html" target="_blank" rel="noopener">http://localhost:8080/mapbox_map.html</a></p>
+  </div>
+  <div id="layer-list">
+    <h3>Layers</h3>
+    <label><input type="checkbox" id="layer-density" checked /> Density</label>
+    <label><input type="checkbox" id="layer-grav" checked /> Gravity</label>
+    <label><input type="checkbox" id="layer-topo" checked /> Topography</label>
+  </div>
+
+  <script>
+    if (window.location.protocol === 'file:') {
+      document.getElementById('file-protocol-msg').classList.add('visible');
+    }
+
+    // Replace with your own token from https://account.mapbox.com/access-tokens/ (do not commit real tokens)
+    const MAPBOX_TOKEN = 'YOUR_MAPBOX_ACCESS_TOKEN';
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+
+    // Map view: change these to look at another region (data files stay the same).
+    const MAP_CONFIG = {
+      center: [-0.5, 43.0],           // [longitude, latitude] e.g. Southern Africa: [26.0, -26.0]
+      zoom: 8,                         // 1–20; lower = more zoomed out
+      style: 'mapbox://styles/mapbox/light-v11'  // or 'dark-v11', 'satellite-v9', 'streets-v12'
+    };
+
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: MAP_CONFIG.style,
+      center: MAP_CONFIG.center,
+      zoom: MAP_CONFIG.zoom
+    });
+
+    const geojsonFiles = [
+      { id: 'density', url: 'density_polygons.geojson', color: '#e74c3c', opacity: 0.45 },
+      { id: 'grav', url: 'grav_polygons.geojson', color: '#3498db', opacity: 0.4 },
+      { id: 'topo', url: 'topo_polygons.geojson', color: '#2ecc71', opacity: 0.35 }
+    ];
+
+    let bounds = null;
+
+    function addLayer({ id, url, color, opacity }) {
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (!map.getSource(id)) {
+            map.addSource(id, { type: 'geojson', data });
+          } else {
+            map.getSource(id).setData(data);
+          }
+          if (!map.getLayer(id + '-fill')) {
+            map.addLayer({
+              id: id + '-fill',
+              type: 'fill',
+              source: id,
+              paint: {
+                'fill-color': color,
+                'fill-opacity': opacity,
+                'fill-outline-color': color
+              }
+            });
+          }
+          if (data.features && data.features.length > 0) {
+            const bbox = data.features.reduce((acc, f) => {
+              if (f.geometry && f.geometry.coordinates && f.geometry.coordinates[0]) {
+                f.geometry.coordinates[0].forEach(c => {
+                  acc[0] = Math.min(acc[0], c[0]);
+                  acc[1] = Math.min(acc[1], c[1]);
+                  acc[2] = Math.max(acc[2], c[0]);
+                  acc[3] = Math.max(acc[3], c[1]);
+                });
+              }
+              return acc;
+            }, [Infinity, Infinity, -Infinity, -Infinity]);
+            if (bbox[0] !== Infinity) {
+              if (!bounds) bounds = bbox;
+              else {
+                bounds[0] = Math.min(bounds[0], bbox[0]);
+                bounds[1] = Math.min(bounds[1], bbox[1]);
+                bounds[2] = Math.max(bounds[2], bbox[2]);
+                bounds[3] = Math.max(bounds[3], bbox[3]);
+              }
+            }
+          }
+        })
+        .catch(err => console.error('Failed to load ' + url, err));
+    }
+
+    map.on('load', () => {
+      if (window.location.protocol === 'file:') return;
+      geojsonFiles.forEach(addLayer);
+      setTimeout(() => {
+        if (bounds && bounds[0] !== Infinity) {
+          map.fitBounds(bounds, { padding: 40, maxZoom: 12 });
+        }
+      }, 1500);
+    });
+
+    function setLayerVisibility(layerId, visible) {
+      if (map.getLayer(layerId)) {
+        map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none');
+      }
+    }
+    document.getElementById('layer-density').addEventListener('change', e => {
+      setLayerVisibility('density-fill', e.target.checked);
+    });
+    document.getElementById('layer-grav').addEventListener('change', e => {
+      setLayerVisibility('grav-fill', e.target.checked);
+    });
+    document.getElementById('layer-topo').addEventListener('change', e => {
+      setLayerVisibility('topo-fill', e.target.checked);
+    });
+  </script>
+</body>
+</html>

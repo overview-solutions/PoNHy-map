@@ -228,7 +228,8 @@ def _select_data_dir(root: str) -> Optional[str]:
         print(f"  {idx}) {path}")
 
     if not sys.stdin.isatty():
-        raise RuntimeError("Multiple Data folders found but no interactive terminal to select one.")
+        print("[PoNHy] Non-interactive session detected. Using the first Data folder.")
+        return candidates[0]
 
     while True:
         choice = input("Select Data folder (number -> Enter): ").strip()
@@ -525,7 +526,8 @@ if run_inversion:
         if not os.path.exists(initial_model_filename):
             raise FileNotFoundError(
                 f"initial_model file not found: {initial_model_filename}. "
-                "Update initial_model to a valid CSV path or disable use_initial_model."
+                "Check that the chosen Data folder matches your config (e.g. Pyrenees config → Data_Pyrenees, California config → Data_California). "
+                "Or update initial_model in the YAML or disable use_initial_model."
             )
         initial_model_data = np.loadtxt(initial_model_filename, delimiter=",", skiprows=1)
     else:
@@ -665,14 +667,14 @@ if run_inversion:
         survey=survey_grav,
         mesh=mesh,
         rhoMap=wires.den,  
-        ind_active=actv,
+        active_cells=actv,
     )
 
     simulation_mag = pf.magnetics.simulation.Simulation3DIntegral(
         survey=survey_mag,
         mesh=mesh,
         chiMap=wires.sus,  
-        ind_active=actv,
+        active_cells=actv,
     )
 
     dmis_grav = data_misfit.L2DataMisfit(data=data_object_grav, simulation=simulation_grav) 

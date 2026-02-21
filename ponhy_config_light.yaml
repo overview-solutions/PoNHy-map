@@ -1,0 +1,183 @@
+# ======================================================================================================
+# PoNHy - LIGHT config (reduced CPU/memory to avoid overloading your machine)
+# Same as California but: fewer iterations, 1 core, optional analyses disabled.
+# Use this if full runs crash or freeze your computer.
+# ======================================================================================================
+
+RUN_INVERSION: true
+RUN_H2_QUANTIFICATION: true
+BASE_DIR: "auto"
+
+TOPO_FILE: "Topo_data.txt"
+GRAV_FILE: "Grav_data.txt"
+MAG_FILE: "Mag_data_down.txt"
+INITIAL_MODEL: "Initial_geology_small_20.csv"
+USE_INITIAL_MODEL: true
+BACKGROUND_DENS: -1e-4
+BACKGROUND_SUSC: 1e-4
+DB_DIR: "DB0"
+TEMPERATURE_FILE: "Temperature_20.csv"
+DENSITY_FILE: "Density_Serpentinite.csv"
+MAGSUS_FILE: "Magsus_Serpentinite.csv"
+SAVE_SVG: false
+
+# Mesh (same as California)
+DX: 1000
+DY: 1000
+DZ: 500
+DEPTH_CORE: 20000
+EXPANSION_PERCENTAGE: 10
+EXPANSION_TYPE: "square"
+DOMINANT_SIDE: "x"
+ORIGINAL_Y: 82000
+ORIGINAL_X: 0
+
+UNCER_GRAV: 2.5
+UNCER_MAG: 2.5
+INCLINATION: 62
+DECLINATION: 15
+STRENGTH: 48000
+
+UNIT_LABELS: ["Sediments", "Serpentinite", "Basement"]
+UNIT_DENS_ADJ_LIST: [2.40, 2.63, 2.80]
+UNIT_MAGSUS_LIST: [0.001, 0.07, 0.001]
+UNIT_DENS_DISP_LIST: [0.05, 0.07, 0.05]
+UNIT_MAGSUS_DISP_LIST: [0.005, 0.007, 0.005]
+VOL_UNIT_LIST: [0.20, 0.30, 0.50]
+SERPENTINITE_LABEL: 1
+LOW_DENS_ADJ: 1.7
+UP_DENS_ADJ: 3.5
+LOWER_SUSCEPTIBILITY: 0
+UPPER_SUSCEPTIBILITY: 0.15
+
+# LIGHT: fewer inversion iterations (stops sooner)
+MAX_ITER: 5
+MAX_ITER_LS: 10
+MAX_ITER_CG: 50
+TOL_CG: 1e-4
+SAVE_PRED_RESIDUAL_NPY: false
+
+ALPHA_PGI: 2.0
+ALPHA_X: 1.0
+ALPHA_Y: 1.0
+ALPHA_Z: 1.0
+ALPHA_XX: 0.0
+ALPHA_YY: 0.0
+ALPHA_ZZ: 0.0
+ALPHA0_RATIO_DENS: 5e-3
+ALPHA0_RATIO_SUSC: 5e-1
+BETA0_RATIO: 1e-3
+COOLING_FACTOR: 1.5
+TOLERANCE: 0.5
+PROGRESS: 1.0
+USE_CHI_SMALL: false
+CHI_SMALL: 1.0
+WAIT_TILL_STABLE: true
+UPDATE_GMM: false
+KAPPA: [[1e10, 1e10, 0], [1e10, 1e10, 0]]
+CHI0_RATIO: [5e-3, 1e2]
+
+SEED: 12345
+USE_GLOBAL_SEED: true
+
+DIST_X: 1
+DIST_Y: 1
+DIST_Z: 1
+DENSITY_SERPENTINITE: 2910
+POROSITY_FRONT: 8
+INT_FRACTURE_SPACING: 0.05
+PERMEABILITY_FRACTURES: 1e-20
+WATERROCKRATIO: 0.16
+FLOW_TARGET: 2e6
+DENSITY_LITHO: 2700
+GRAVITY: 9.81
+LITHOLOGY_CODE: "HZ1"
+YEARS: 1
+MOLAR_MASS_H2: 0.00201588
+MOLAR_MASS_H2O: 0.01801528
+V_REF_SYNTHETIC: 1.272e-5
+T_REF_RANGE: "300_325"
+
+# LIGHT: use 1 core only (run_ponhy.sh also caps threads; this caps PoNHy's own parallel work)
+N_CORES: 1
+
+# LIGHT: disable fault MC and use fewer iterations
+RUN_MONTECARLO_FAULT: false
+FAULT_MC_N_ITER: 500
+
+FLOW_TARGET_FRACTURE_CONFIG:
+  L_fault: 250000
+  width_min: 100
+  width_max: 1500
+  fractured_length_min: 0.10
+  fractured_length_max: 0.70
+  D_min: 1000
+  D_max: 12000
+  fracture_density_min: 0.01
+  fracture_density_max: 0.2
+  deltaP_min: 60
+  deltaP_max: 100
+  mu_min: 1e-3
+  mu_max: 1e-5
+  connection_fraction_min: 0.25
+  connection_fraction_max: 0.50
+
+# LIGHT: fewer MC iterations
+MC_NO_SATURATION_CONFIG:
+  n_iter: 300
+  verbose: false
+  sampling: "sobol"
+  v_ref_range: [0.4, 1.6]
+  prod_rate_range: [0.5, 1.5]
+  volume_range: [0.8, 1.2]
+  serp_correction_range: [0.8, 1.2]
+  surface_area_range: [0.6, 1.4]
+  show_progress: true
+
+MC_SATURATION_CONFIG:
+  n_iter: 300
+  sampling: "sobol"
+  dt_day: 1
+  max_chunk_size: 100
+  vol_range: [0.8, 1.2]
+  mean_press_range: [0.7, 1.3]
+  serp_deg_range: [0.8, 1.2]
+  spacing_range: [0.5, 1.5]
+  perm_range: [0.8, 1.2]
+  prod_rate_range: [0.8, 1.2]
+  d_range: [0.5, 1.5]
+  kg_rocks_range: [0.4, 1.6]
+  solubility_scaling_range: [0.7, 1.3]
+
+# LIGHT: disable heavy optional analyses
+RUN_UNIVARIATE_ANALYSIS_NO_SAT: false
+RUN_UNIVARIATE_ANALYSIS_SAT: false
+UNIVARIATE_ANALYSIS_CONFIG:
+  n_points: 10
+  n_rep: 20
+  baseline_n_iter: 200
+  sampling: "sobol"
+  show_progress: true
+  quiet: true
+  make_plot: false
+  worker_count: 0
+
+RUN_MC_CONVERGENCE_SWEEP: false
+MC_CONVERGENCE_SWEEP_CONFIG:
+  iter_values: [100, 500, 1000]
+  reuse_from_single_run: false
+  result_column: "H2 total [tons]"
+  tolerance_mean_pct: 10.0
+  tolerance_std_pct: 5.0
+  save_plot: true
+  silence_runs: true
+
+RUN_ANALYZE_LIMITING_FACTORS: false
+FLOW_TARGET_LOG_MIN: 1e1
+FLOW_TARGET_LOG_MAX: 1e10
+FLOW_TARGET_N_SAMPLES: 5
+MC_FLOW_TARGET_CONFIG:
+  n_iter: 200
+  verbose: false
+  show_progress: false
+  save_timeseries_plots: false
