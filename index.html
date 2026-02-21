@@ -86,7 +86,7 @@
     const MAP_CONFIG = {
       center: [-0.5, 43.0],           // [longitude, latitude] e.g. Southern Africa: [26.0, -26.0]
       zoom: 8,                         // 1–20; lower = more zoomed out
-      style: 'mapbox://styles/mapbox/light-v11'  // or 'dark-v11', 'satellite-v9', 'streets-v12'
+      style: 'mapbox://styles/mapbox/satellite-streets-v12'  // satellite + streets; or light-v11, dark-v11, satellite-v9
     };
 
     const map = new mapboxgl.Map({
@@ -96,15 +96,26 @@
       zoom: MAP_CONFIG.zoom
     });
 
+    // Foursquare-style ramp: dark purple → red → orange → yellow (value-based fill)
     const geojsonFiles = [
-      { id: 'density', url: 'density_polygons.geojson', color: '#e74c3c', opacity: 0.45 },
-      { id: 'grav', url: 'grav_polygons.geojson', color: '#3498db', opacity: 0.4 },
-      { id: 'topo', url: 'topo_polygons.geojson', color: '#2ecc71', opacity: 0.35 }
+      { id: 'density', url: 'density_polygons.geojson', valueProperty: 'Density', opacity: 0.85 },
+      { id: 'grav', url: 'grav_polygons.geojson', valueProperty: 'col_0', opacity: 0.85 },
+      { id: 'topo', url: 'topo_polygons.geojson', valueProperty: 'z_m', opacity: 0.85 }
     ];
 
     let bounds = null;
 
-    function addLayer({ id, url, color, opacity }) {
+    function buildColorExpression(valueProperty, minVal, maxVal) {
+      const range = maxVal - minVal || 1;
+      return ['interpolate', ['linear'], ['get', valueProperty],
+        minVal, '#2d1b69',
+        minVal + range * 0.33, '#bd0026',
+        minVal + range * 0.66, '#e65c2e',
+        maxVal, '#fec52b'
+      ];
+    }
+
+    function addLayer({ id, url, valueProperty, opacity }) {
       fetch(url)
         .then(res => res.json())
         .then(data => {
@@ -113,15 +124,33 @@
           } else {
             map.getSource(id).setData(data);
           }
+          let minVal = Infinity, maxVal = -Infinity;
+          if (data.features && valueProperty) {
+            data.features.forEach(f => {
+              const v = f.properties && f.properties[valueProperty];
+              if (typeof v === 'number' && isFinite(v)) {
+                minVal = Math.min(minVal, v);
+                maxVal = Math.max(maxVal, v);
+              }
+            });
+            if (minVal === Infinity) minVal = 0;
+            if (maxVal === -Infinity) maxVal = 1;
+          } else {
+            minVal = 0;
+            maxVal = 1;
+          }
+          const fillColor = valueProperty
+            ? buildColorExpression(valueProperty, minVal, maxVal)
+            : '#2d1b69';
           if (!map.getLayer(id + '-fill')) {
             map.addLayer({
               id: id + '-fill',
               type: 'fill',
               source: id,
               paint: {
-                'fill-color': color,
+                'fill-color': fillColor,
                 'fill-opacity': opacity,
-                'fill-outline-color': color
+                'fill-outline-color': 'rgba(0,0,0,0.1)'
               }
             });
           }
