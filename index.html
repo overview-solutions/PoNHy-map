@@ -40,10 +40,26 @@
     #file-protocol-msg.visible { display: block; }
     #file-protocol-msg code { background: #f0f0f0; padding: 2px 6px; border-radius: 4px; }
     #file-protocol-msg h3 { margin: 0 0 12px 0; color: #c0392b; }
+    #github-link-box {
+      position: absolute;
+      bottom: 12px;
+      left: 10px;
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      z-index: 1;
+      font-size: 13px;
+    }
+    #github-link-box a { color: #0366d6; text-decoration: none; }
+    #github-link-box a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div id="github-link-box">
+    <a href="https://github.com/overview-solutions/PoNHy-map" target="_blank" rel="noopener">GitHub: overview-solutions/PoNHy-map</a>
+  </div>
   <div id="file-protocol-msg" aria-live="polite">
     <h3>Open via a local server</h3>
     <p>This page was opened from disk (<code>file://</code>). Browsers block loading the GeoJSON files that way.</p>
